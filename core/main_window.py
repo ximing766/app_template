@@ -101,7 +101,8 @@ class MainWindow(QMainWindow):
         else:
             self.ui.title_bar.set_title(self.app_name)
 
-        self.show_splash_screen()
+        # Skip splash screen if not needed, but ensure init_ui is called
+        # self.show_splash_screen()
         QTimer.singleShot(100, self.init_ui)
         
     def show_splash_screen(self):
@@ -118,6 +119,10 @@ class MainWindow(QMainWindow):
     
     def init_ui(self):
         """Initialize the user interface"""
+        # Ensure window is shown if splash screen is skipped
+        if not self.splash_screen:
+            self.show()
+            
         self.setMinimumSize(1000, 700)
         self.resize(1200, 800)
         
@@ -166,7 +171,12 @@ class MainWindow(QMainWindow):
         sorted_pages = sorted(visible_pages.items(), key=lambda x: x[1].order)
         if sorted_pages:
             first_page_id = sorted_pages[0][0]
-            if first_page_id in self.pages:
+            # Force lazy load of the first page
+            page_info = self.page_manager.get_page_info(first_page_id)
+            if page_info:
+                page_instance = page_info.create_instance(self)
+                self.ui.load_pages.pages.addWidget(page_instance)
+                self.pages[first_page_id] = page_instance
                 MainFunctions.set_page(self, self.pages[first_page_id])
                 self.ui.left_menu.select_only_one(f"btn_{first_page_id}")
     
@@ -177,7 +187,93 @@ class MainWindow(QMainWindow):
     
     def theme_changed(self):
         """Handle theme change signal"""
-        MainFunctions.theme_changed(self)
+        # Reload settings and themes first
+        self.settings = Settings().items
+        self.ui.themes = Themes().items
+        self.themes = self.ui.themes # Ensure MainWindow.themes is updated
+        
+        # Determine new theme name
+        theme_name = "light" if "bright" in self.settings["theme_name"] else "dark"
+        
+        # Update left menu background colors manually since it might be cached
+        self.ui.left_menu.bg.setStyleSheet(f"background: {self.themes['app_color']['dark_one']}; border-radius: {self.ui.left_menu._radius};")
+        
+        # Update toggle button colors
+        if hasattr(self.ui.left_menu, 'toggle_button'):
+            self.ui.left_menu.toggle_button.set_color(
+                self.themes['app_color']['dark_one'],
+                self.themes['app_color']['dark_three'],
+                self.themes['app_color']['dark_four'],
+                self.themes['app_color']['bg_one']
+            )
+        
+        # Completely clear old menus and add them back to force re-render with new theme
+        self.ui.left_menu.clear_menus()
+        
+        # Re-add custom title bar menus
+        title_bar_menus = [
+            {
+                "btn_icon": "icon_settings.svg",
+                "btn_id": "btn_top_settings",
+                "btn_tooltip": "Settings",
+                "is_active": False
+            }
+        ]
+        self.ui.title_bar.clear_menus()
+        self.ui.title_bar.add_menus(title_bar_menus)
+        
+        # Update UI components via MainFunctions
+        # We MUST NOT call MainFunctions.theme_changed(self) because it calls self.ui.setup_ui(self)
+        # which completely recreates all QWidgets from scratch, causing the "Internal C++ object already deleted"
+        # errors because our self.pages references are now orphaned!
+        # Instead, we just manually update the styles of existing widgets here.
+        
+        # Update window styles
+        self.ui.window.set_stylesheet(
+            bg_color=self.themes["app_color"]["bg_one"],
+            border_color=self.themes["app_color"]["bg_two"],
+            text_color=self.themes["app_color"]["text_foreground"]
+        )
+        
+        # Update title bar background manually since it doesn't have set_stylesheet
+        self.ui.title_bar.bg.setStyleSheet(f"background-color: {self.themes['app_color']['bg_two']}; border-radius: 8px;")
+        
+        # We need to recreate the title bar custom buttons with new colors
+        self.ui.title_bar._dark_one = self.themes["app_color"]["dark_one"]
+        self.ui.title_bar._bg_color = self.themes["app_color"]["bg_two"]
+        self.ui.title_bar._btn_bg_color_hover = self.themes["app_color"]["dark_three"]
+        self.ui.title_bar._btn_bg_color_pressed = self.themes["app_color"]["dark_four"]
+        self.ui.title_bar._icon_color = self.themes["app_color"]["icon_color"]
+        self.ui.title_bar._icon_color_hover = self.themes["app_color"]["icon_hover"]
+        self.ui.title_bar._icon_color_pressed = self.themes["app_color"]["icon_pressed"]
+        self.ui.title_bar._icon_color_active = self.themes["app_color"]["icon_active"]
+        self.ui.title_bar._context_color = self.themes["app_color"]["context_color"]
+        self.ui.title_bar._text_foreground = self.themes["app_color"]["text_foreground"]
+        
+        # Re-add custom title bar menus with updated colors
+        title_bar_menus = [
+            {
+                "btn_icon": "icon_settings.svg",
+                "btn_id": "btn_top_settings",
+                "btn_tooltip": "Settings",
+                "is_active": False
+            }
+        ]
+        self.ui.title_bar.clear_menus()
+        self.ui.title_bar.add_menus(title_bar_menus)
+        
+        # Re-setup navigation to render new left menu with updated theme
+        self.setup_navigation()
+        
+        # Restore selected menu state based on current page
+        current_widget = self.ui.load_pages.pages.currentWidget()
+        if current_widget and hasattr(current_widget, 'page_id'):
+            self.ui.left_menu.select_only_one(f"btn_{current_widget.page_id}")
+        
+        # Update base styles for all instantiated pages
+        for page_id, page_instance in self.pages.items():
+            if hasattr(page_instance, 'apply_base_style'):
+                page_instance.apply_base_style(theme_name)
     
     def setup_navigation(self):
         """Setup navigation bar with registered pages"""
@@ -188,12 +284,6 @@ class MainWindow(QMainWindow):
         
         for page_id, page_info in sorted_pages:
             if page_info.enabled and page_info.visible:
-                page_instance = page_info.create_instance(self)
-                
-                # Add page to Stacked Widget
-                self.ui.load_pages.pages.addWidget(page_instance)
-                self.pages[page_id] = page_instance
-                
                 # Determine icon
                 icon_name = "icon_widgets.svg" # Default
                 if page_id == "serial_dashboard": icon_name = "icon_restore.svg"
@@ -225,10 +315,20 @@ class MainWindow(QMainWindow):
             self.toggle_settings_menu()
 
         # Handle page navigation
-        elif btn_id.startswith("btn_") and btn_id[4:] in self.pages:
+        elif btn_id.startswith("btn_"):
             page_id = btn_id[4:]
-            self.ui.left_menu.select_only_one(btn_id)
-            MainFunctions.set_page(self, self.pages[page_id])
+            
+            # Lazy load the page if it hasn't been instantiated yet
+            if page_id not in self.pages:
+                page_info = self.page_manager.get_page_info(page_id)
+                if page_info:
+                    page_instance = page_info.create_instance(self)
+                    self.ui.load_pages.pages.addWidget(page_instance)
+                    self.pages[page_id] = page_instance
+            
+            if page_id in self.pages:
+                self.ui.left_menu.select_only_one(btn_id)
+                MainFunctions.set_page(self, self.pages[page_id])
 
     def btn_released(self):
         pass

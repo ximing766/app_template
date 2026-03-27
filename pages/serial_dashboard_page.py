@@ -62,7 +62,7 @@ class SerialConfigWidget(QFrame):
         grid.addWidget(self.baud_combo, 0, 1)
 
         self.refresh_timer = QTimer(self)
-        self.refresh_timer.setInterval(3000)
+        self.refresh_timer.setInterval(5000)
         self.refresh_timer.timeout.connect(self.refresh_ports)
         self.refresh_timer.start()
 

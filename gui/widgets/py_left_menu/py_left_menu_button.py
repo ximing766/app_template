@@ -224,6 +224,16 @@ class PyLeftMenuButton(QPushButton):
     def set_active_toggle(self, is_active):
         self._is_toggle_active = is_active
 
+    # SET COLOR
+    # ///////////////////////////////////////////////////////////////
+    def set_color(self, dark_one, dark_three, dark_four, bg_one):
+        self._dark_one = dark_one
+        self._dark_three = dark_three
+        self._dark_four = dark_four
+        self._bg_one = bg_one
+        self._set_bg_color = self._dark_one
+        self.update()
+
     # SET ICON
     # ///////////////////////////////////////////////////////////////
     def set_icon(self, icon_path):

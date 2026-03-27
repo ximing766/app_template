@@ -201,6 +201,20 @@ class PyTitleBar(QWidget):
             if self._is_custom_title_bar:
                 self.custom_buttons_layout.addWidget(self.div_3)
 
+    # CLEAR ALL MENUS
+    # ///////////////////////////////////////////////////////////////
+    def clear_menus(self):
+        # Remove all widgets from custom buttons layout
+        while self.custom_buttons_layout.count():
+            item = self.custom_buttons_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                # Keep the div_3 widget, don't delete it
+                if widget != self.div_3:
+                    widget.deleteLater()
+                else:
+                    widget.setParent(None)
+
     # TITLE BAR MENU EMIT SIGNALS
     # ///////////////////////////////////////////////////////////////
     def btn_clicked(self):

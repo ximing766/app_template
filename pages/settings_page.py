@@ -243,6 +243,7 @@ class SettingsPage(BasePage):
             
         # 2. Update PyDracula's settings.json
         try:
+            from gui.core.json_settings import Settings
             settings = Settings()
             settings.items["theme_name"] = next_theme_file
             settings.serialize()
@@ -251,7 +252,6 @@ class SettingsPage(BasePage):
             if self.window() and hasattr(self.window(), "theme_changed"):
                 self.window().theme_changed()
                 
-            self.show_info("Theme Changed", f"Theme changed to {next_display}. Applied immediately.")
         except Exception as e:
             self.show_error("Error", f"Failed to change theme: {str(e)}")
     

@@ -223,6 +223,25 @@ class PyLeftMenu(QWidget):
         for btn in self.findChildren(QPushButton):
             btn.set_active_tab(False)
 
+    # CLEAR ALL MENUS
+    # ///////////////////////////////////////////////////////////////
+    def clear_menus(self):
+        # Clear top layout (except toggle button and div)
+        for i in reversed(range(2, self.top_layout.count())): 
+            widget_to_remove = self.top_layout.itemAt(i).widget()
+            if widget_to_remove:
+                self.top_layout.removeWidget(widget_to_remove)
+                widget_to_remove.setParent(None)
+                
+        # Clear bottom layout (except div)
+        for i in reversed(range(1, self.bottom_layout.count())):
+            widget_to_remove = self.bottom_layout.itemAt(i).widget()
+            if widget_to_remove:
+                self.bottom_layout.removeWidget(widget_to_remove)
+                widget_to_remove.setParent(None)
+        
+        self.div_bottom.hide()
+
     # SETUP APP
     # ///////////////////////////////////////////////////////////////
     def setup_ui(self):

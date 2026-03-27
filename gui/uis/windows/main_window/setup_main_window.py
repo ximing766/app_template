@@ -58,89 +58,11 @@ class SetupMainWindow:
 
     # ADD LEFT MENUS
     # ///////////////////////////////////////////////////////////////
-    add_left_menus = [
-        {
-            "btn_icon" : "icon_home.svg",
-            "btn_id" : "btn_home",
-            "btn_text" : "Home",
-            "btn_tooltip" : "Home page",
-            "show_top" : True,
-            "is_active" : True
-        },
-        {
-            "btn_icon" : "icon_widgets.svg",
-            "btn_id" : "btn_widgets",
-            "btn_text" : "Show Custom Widgets",
-            "btn_tooltip" : "Show custom widgets",
-            "show_top" : True,
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_add_user.svg",
-            "btn_id" : "btn_add_user",
-            "btn_text" : "Add Users",
-            "btn_tooltip" : "Add users",
-            "show_top" : True,
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_file.svg",
-            "btn_id" : "btn_new_file",
-            "btn_text" : "New File",
-            "btn_tooltip" : "Create new file",
-            "show_top" : True,
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_folder_open.svg",
-            "btn_id" : "btn_open_file",
-            "btn_text" : "Open File",
-            "btn_tooltip" : "Open file",
-            "show_top" : True,
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_save.svg",
-            "btn_id" : "btn_save",
-            "btn_text" : "Save File",
-            "btn_tooltip" : "Save file",
-            "show_top" : True,
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_info.svg",
-            "btn_id" : "btn_info",
-            "btn_text" : "Information",
-            "btn_tooltip" : "Open informations",
-            "show_top" : False,
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_settings.svg",
-            "btn_id" : "btn_settings",
-            "btn_text" : "Settings",
-            "btn_tooltip" : "Open settings",
-            "show_top" : False,
-            "is_active" : False
-        }
-    ]
+    add_left_menus = []
 
      # ADD TITLE BAR MENUS
     # ///////////////////////////////////////////////////////////////
-    add_title_bar_menus = [
-        {
-            "btn_icon" : "icon_search.svg",
-            "btn_id" : "btn_search",
-            "btn_tooltip" : "Search",
-            "is_active" : False
-        },
-        {
-            "btn_icon" : "icon_settings.svg",
-            "btn_id" : "btn_top_settings",
-            "btn_tooltip" : "Top settings",
-            "is_active" : False
-        }
-    ]
+    add_title_bar_menus = []
 
     # SETUP CUSTOM BTNs OF CUSTOM WIDGETS
     # Get sender() function when btn is clicked

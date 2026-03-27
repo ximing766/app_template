@@ -43,6 +43,15 @@ class Themes(object):
     # ///////////////////////////////////////////////////////////////
     def __init__(self):
         super(Themes, self).__init__()
+        
+        # Load settings each time to get the current theme name
+        setup_settings = Settings()
+        _settings = setup_settings.items
+        
+        # APP PATH
+        json_file = f"gui/themes/{_settings['theme_name']}.json"
+        app_path = os.path.abspath(os.getcwd())
+        self.settings_path = os.path.normpath(os.path.join(app_path, json_file))
 
         # DICTIONARY WITH SETTINGS
         self.items = {}

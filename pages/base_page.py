@@ -35,116 +35,144 @@ class BasePage(QWidget):
         """Initialize page content - override in subclasses"""
         pass
 
-    def apply_base_style(self):
-        """Apply base styles for common widgets"""
-        base_qss = """
-        QComboBox, QLineEdit, QCheckBox { color: #f8f8f2; }
-        QLineEdit, QTextEdit { 
-            background-color: rgba(36, 42, 56, 0.2); 
-            border: 1px solid #313d4b; 
-            border-radius: 1px; 
-            padding: 3px; 
-            color: #ffffff;
-            selection-background-color: #088bef;
+    def apply_base_style(self, theme_name="dark"):
+        """Apply base styles for common widgets based on theme"""
+        # Determine if we should use light or dark theme
+        is_light = theme_name.lower() == "light"
+        
+        # Color definitions based on theme
+        colors = {
+            "text": "#4B5469" if is_light else "#f8f8f2",
+            "bg_input": "#ffffff" if is_light else "rgba(36, 42, 56, 0.2)",
+            "border_input": "#c3ccdf" if is_light else "#313d4b",
+            "border_input_focus": "#568af2" if is_light else "#477faa",
+            "bg_input_focus": "#f8f9fc" if is_light else "rgba(27, 32, 44, 0.99)",
+            "bg_checkbox": "#ffffff" if is_light else "#21252b",
+            "border_checkbox": "#c3ccdf" if is_light else "#888c96",
+            "bg_checkbox_checked": "#568af2" if is_light else "#3e4451",
+            "border_checkbox_hover": "#8CB8FF" if is_light else "#564463",
+            "bg_btn": "#ffffff" if is_light else "#3f444e",
+            "bg_btn_hover": "#f5f6f9" if is_light else "#4a505c",
+            "bg_btn_pressed": "#e2e9f7" if is_light else "#2c313c",
+            "border_btn": "#c3ccdf" if is_light else "transparent",
+            "accent": "#568af2",
+            "bg_scrollbar": "#e2e9f7" if is_light else "#1e2229",
+            "bg_scrollbar_handle": "#b0b5c0" if is_light else "#568af2",
+            "splitter": "#c3ccdf" if is_light else "#666c77",
+            "slider_groove": "#e2e9f7" if is_light else "#2c313a"
         }
-        QLineEdit:focus, QTextEdit:focus { border: 1.5px solid #477faa; background-color: rgba(27, 32, 44, 0.99); }
+        
+        # In light mode, add a subtle border to buttons for better visibility
+        btn_border_css = f"border: 1px solid {colors['border_btn']};" if is_light else "border: none;"
+        
+        base_qss = f"""
+        QComboBox, QLineEdit, QCheckBox {{ color: {colors['text']}; }}
+        QLineEdit, QTextEdit {{ 
+            background-color: {colors['bg_input']}; 
+            border: 1px solid {colors['border_input']}; 
+            border-radius: 4px; 
+            padding: 4px; 
+            color: {colors['text']};
+            selection-background-color: {colors['accent']};
+        }}
+        QLineEdit:focus, QTextEdit:focus {{ border: 1.5px solid {colors['border_input_focus']}; background-color: {colors['bg_input_focus']}; }}
 
-        QCheckBox { spacing: 5px; }
-        QCheckBox::indicator {
+        QCheckBox {{ spacing: 5px; }}
+        QCheckBox::indicator {{
             width: 18px;
             height: 18px;
             border-radius: 4px;
-            border: 2px solid #888c96;
-            background-color: #21252b;
-        }
-        QCheckBox::indicator:checked {
-            background-color: #3e4451;
-            border-color: #568af2;
-        }
-        QCheckBox::indicator:hover { border-color: #564463; }
+            border: 2px solid {colors['border_checkbox']};
+            background-color: {colors['bg_checkbox']};
+        }}
+        QCheckBox::indicator:checked {{
+            background-color: {colors['bg_checkbox_checked']};
+            border-color: {colors['accent']};
+        }}
+        QCheckBox::indicator:hover {{ border-color: {colors['border_checkbox_hover']}; }}
 
-        QPushButton { 
-            background-color: #3f444e; 
-            color: #f8f8f2; 
+        QPushButton {{ 
+            background-color: {colors['bg_btn']}; 
+            color: {colors['text']}; 
             border-radius: 5px; 
-            border: none; 
+            {btn_border_css}
             padding: 5px 15px;
-        }
-        QPushButton:hover { background-color: #4a505c; }
-        QPushButton:pressed { background-color: #2c313c; }
+        }}
+        QPushButton:hover {{ background-color: {colors['bg_btn_hover']}; }}
+        QPushButton:pressed {{ background-color: {colors['bg_btn_pressed']}; }}
 
-        QComboBox { background-color: #3f444e; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }
-        QComboBox::drop-down { border: none; }
-        QComboBox QAbstractItemView { background-color: #3f444e; color: #f8f8f2; selection-background-color: #568af2; }
+        QComboBox {{ background-color: {colors['bg_btn']}; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }}
+        QComboBox::drop-down {{ border: none; }}
+        QComboBox QAbstractItemView {{ background-color: {colors['bg_btn']}; color: {colors['text']}; selection-background-color: {colors['accent']}; }}
         
-        QSplitter::handle {
-            background-color: #666c77;
+        QSplitter::handle {{
+            background-color: {colors['splitter']};
             margin: 1px;
             border-radius: 1px;
-        }
-        QSplitter::handle:hover {
-            background-color: #568af2;
-        }
-        QSplitter::handle:pressed {
-            background-color: #568af2;
-        }
-        QSplitter::handle:horizontal {
+        }}
+        QSplitter::handle:hover {{
+            background-color: {colors['accent']};
+        }}
+        QSplitter::handle:pressed {{
+            background-color: {colors['accent']};
+        }}
+        QSplitter::handle:horizontal {{
             width: 1px;
-        }
-        QSplitter::handle:vertical {
+        }}
+        QSplitter::handle:vertical {{
             height: 1px;
-        }
+        }}
 
         /* QSlider - Minimalist Style */
-        QSlider { background: transparent; }
-        QSlider::groove:horizontal { background: #2c313a; height: 4px; border-radius: 2px; }
-        QSlider::handle:horizontal { background: #568af2; width: 4px; height: 12px; margin: -4px 0; border-radius: 2px; }
-        QSlider::sub-page:horizontal { background: #568af2; border-radius: 2px; }
+        QSlider {{ background: transparent; }}
+        QSlider::groove:horizontal {{ background: {colors['slider_groove']}; height: 4px; border-radius: 2px; }}
+        QSlider::handle:horizontal {{ background: {colors['accent']}; width: 4px; height: 12px; margin: -4px 0; border-radius: 2px; }}
+        QSlider::sub-page:horizontal {{ background: {colors['accent']}; border-radius: 2px; }}
 
-        QSlider::groove:vertical { background: #2c313a; width: 4px; border-radius: 2px; }
-        QSlider::handle:vertical { background: #568af2; width: 12px; height: 4px; margin: 0 -4px; border-radius: 2px; }
-        QSlider::sub-page:vertical { background: #568af2; border-radius: 2px; }
+        QSlider::groove:vertical {{ background: {colors['slider_groove']}; width: 4px; border-radius: 2px; }}
+        QSlider::handle:vertical {{ background: {colors['accent']}; width: 12px; height: 4px; margin: 0 -4px; border-radius: 2px; }}
+        QSlider::sub-page:vertical {{ background: {colors['accent']}; border-radius: 2px; }}
 
         
         /* QScrollBar - Minimalist Style */
-        QScrollBar:vertical {
-            background: #1e2229;
+        QScrollBar:vertical {{
+            background: {colors['bg_scrollbar']};
             width: 8px;
             margin: 0px;
             border-radius: 4px;
-        }
-        QScrollBar::handle:vertical {
-            background: #568af2;
+        }}
+        QScrollBar::handle:vertical {{
+            background: {colors['bg_scrollbar_handle']};
             min-height: 20px;
             border-radius: 4px;
             margin: 1px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
             height: 0px;
             background: none;
-        }
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        }}
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
             background: none;
-        }
-        QScrollBar:horizontal {
-            background: #1e2229;
+        }}
+        QScrollBar:horizontal {{
+            background: {colors['bg_scrollbar']};
             height: 8px;
             margin: 0px;
             border-radius: 4px;
-        }
-        QScrollBar::handle:horizontal {
-            background: #568af2;
+        }}
+        QScrollBar::handle:horizontal {{
+            background: {colors['bg_scrollbar_handle']};
             min-width: 20px;
             border-radius: 4px;
             margin: 1px;
-        }
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+        }}
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
             width: 0px;
             background: none;
-        }
-        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+        }}
+        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             background: none;
-        }
+        }}
         """
         self.setStyleSheet(base_qss)
         

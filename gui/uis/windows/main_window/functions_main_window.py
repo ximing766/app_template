@@ -153,10 +153,12 @@ class MainFunctions():
         
         # APPLY STYLE
         self.ui.setup_ui(self)
+        from gui.uis.windows.main_window.setup_main_window import SetupMainWindow
         SetupMainWindow.setup_gui(self)
         
         # RELOAD PAGES
+        theme_name = "light" if "bright" in settings.items["theme_name"] else "dark"
         for page_id in self.pages:
             page = self.pages[page_id]
             if hasattr(page, "apply_base_style"):
-                page.apply_base_style()
+                page.apply_base_style(theme_name)
