@@ -19,79 +19,32 @@
 from qt_core import *
 
 style = """
-/* HORIZONTAL */
-QSlider {{ margin: {_margin}px; }}
-QSlider::groove:horizontal {{
-    border-radius: {_bg_radius}px;
-    height: {_bg_size}px;
-	margin: 0px;
-	background-color: {_bg_color};
-}}
-QSlider::groove:horizontal:hover {{ background-color: {_bg_color_hover}; }}
-QSlider::handle:horizontal {{
-    border: none;
-    height: {_handle_size}px;
-    width: {_handle_size}px;
-    margin: {_handle_margin}px;
-	border-radius: {_handle_radius}px;
-    background-color: {_handle_color};
-}}
-QSlider::handle:horizontal:hover {{ background-color: {_handle_color_hover}; }}
-QSlider::handle:horizontal:pressed {{ background-color: {_handle_color_pressed}; }}
+/* QSlider - Minimalist Template */
+QSlider {{ background: transparent; }}
+QSlider::groove:horizontal {{ background: {_bg_color}; height: {_bg_size}px; border-radius: {_bg_radius}px; }}
+QSlider::handle:horizontal {{ background: {_handle_color}; width: 4px; height: 12px; margin: -4px 0; border-radius: 2px; }}
+QSlider::sub-page:horizontal {{ background: {_handle_color}; border-radius: {_bg_radius}px; }}
 
-/* VERTICAL */
-QSlider::groove:vertical {{
-    border-radius: {_bg_radius}px;
-    width: {_bg_size}px;
-    margin: 0px;
-	background-color: {_bg_color};
-}}
-QSlider::groove:vertical:hover {{ background-color: {_bg_color_hover}; }}
-QSlider::handle:vertical {{
-	border: none;
-    height: {_handle_size}px;
-    width: {_handle_size}px;
-    margin: {_handle_margin}px;
-	border-radius: {_handle_radius}px;
-    background-color: {_handle_color};
-}}
-QSlider::handle:vertical:hover {{ background-color: {_handle_color_hover}; }}
-QSlider::handle:vertical:pressed {{ background-color: {_handle_color_pressed}; }}
+QSlider::groove:vertical {{ background: {_bg_color}; width: {_bg_size}px; border-radius: {_bg_radius}px; }}
+QSlider::handle:vertical {{ background: {_handle_color}; width: 12px; height: 4px; margin: 0 -4px; border-radius: 2px; }}
+QSlider::sub-page:vertical {{ background: {_handle_color}; border-radius: {_bg_radius}px; }}
 """
 
 class PySlider(QSlider):
     def __init__(
         self,
-        margin = 0,
-        bg_size = 20,
-        bg_radius = 10,
-        bg_color = "#1b1e23",
-        bg_color_hover = "#1e2229",
-        handle_margin = 2,
-        handle_size = 16,
-        handle_radius = 8,
+        bg_size = 4,
+        bg_radius = 2,
+        bg_color = "#2c313a",
         handle_color = "#568af2",
-        handle_color_hover = "#6c99f4",
-        handle_color_pressed = "#3f6fd1"
+        parent = None
     ):
-        super(PySlider, self).__init__()
+        super().__init__(parent)
 
-        # FORMAT STYLE
-        # ///////////////////////////////////////////////////////////////
-        adjust_style = style.format(
-            _margin = margin,
+        # APPLY CUSTOM STYLE
+        self.setStyleSheet(style.format(
             _bg_size = bg_size,
             _bg_radius = bg_radius,
             _bg_color = bg_color,
-            _bg_color_hover = bg_color_hover,
-            _handle_margin = handle_margin,
-            _handle_size = handle_size,
-            _handle_radius = handle_radius,
-            _handle_color = handle_color,
-            _handle_color_hover = handle_color_hover,
-            _handle_color_pressed = handle_color_pressed
-        )
-
-        # APPLY CUSTOM STYLE
-        # ///////////////////////////////////////////////////////////////
-        self.setStyleSheet(adjust_style)
+            _handle_color = handle_color
+        ))

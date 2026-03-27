@@ -266,6 +266,11 @@ class MainWindow(QMainWindow):
             
             if self.background_cache:
                 painter = QPainter(self)
+                
+                # Fill with default background color first to avoid transparent holes
+                theme = Themes().items
+                painter.fillRect(self.rect(), QColor(theme['app_color']['bg_one']))
+                
                 painter.setOpacity(background_config.get('opacity', 1.0))
                 painter.drawPixmap(0, 0, self.width(), self.height(), self.background_cache)
                 

@@ -66,13 +66,26 @@ class SerialConfigWidget(QFrame):
         self.refresh_timer.timeout.connect(self.refresh_ports)
         self.refresh_timer.start()
 
-        self.btn_open = QPushButton("Open")
+        self.btn_open = QPushButton("OPEN")
         self.btn_open.setMinimumHeight(30)
+        self.btn_open.setStyleSheet("""
+            QPushButton {
+                background-color: #3f444e;
+                color: #f8f8f2;
+                border-radius: 5px;
+                border: none;
+                padding: 5px 15px;
+            }
+            QPushButton:hover { background-color: #4a505c; }
+        """)
         self.btn_open.clicked.connect(self.toggle_serial)
         grid.addWidget(self.btn_open, 0, 2)
 
-        self.btn_clear = QPushButton("Clear")
+        self.btn_clear = QPushButton()
+        self.btn_clear.setIcon(QIcon(Functions.set_svg_icon("icon_close.svg")))
+        self.btn_clear.setToolTip("Clear Log")
         self.btn_clear.setMinimumHeight(30)
+        self.btn_clear.setMaximumWidth(40)
         self.btn_clear.clicked.connect(self.clear_log)
         grid.addWidget(self.btn_clear, 0, 3)
         
@@ -94,14 +107,20 @@ class SerialConfigWidget(QFrame):
         self.chk_autoscroll.setChecked(True)
         grid.addWidget(self.chk_autoscroll, 0, 7)   
 
-        self.btn_open_log = QPushButton("Log")
+        self.btn_open_log = QPushButton()
+        self.btn_open_log.setIcon(QIcon(Functions.set_svg_icon("icon_file.svg")))
+        self.btn_open_log.setToolTip("Open Log File")
         self.btn_open_log.setMinimumHeight(30)
+        self.btn_open_log.setMaximumWidth(40)
         self.btn_open_log.clicked.connect(self.open_current_log)
         self.btn_open_log.setEnabled(False)
         grid.addWidget(self.btn_open_log, 0, 8)
         
-        self.btn_open_folder = QPushButton("Folder")
+        self.btn_open_folder = QPushButton()
+        self.btn_open_folder.setIcon(QIcon(Functions.set_svg_icon("icon_folder_open.svg")))
+        self.btn_open_folder.setToolTip("Open Log Folder")
         self.btn_open_folder.setMinimumHeight(30)
+        self.btn_open_folder.setMaximumWidth(40)
         self.btn_open_folder.clicked.connect(self.open_log_folder)
         grid.addWidget(self.btn_open_folder, 0, 9)
 
@@ -148,7 +167,17 @@ class SerialConfigWidget(QFrame):
     def toggle_serial(self):
         if self.serial.isOpen():
             self.serial.close()
-            self.btn_open.setText("Open")
+            self.btn_open.setText("OPEN")
+            self.btn_open.setStyleSheet("""
+                QPushButton {
+                    background-color: #3f444e;
+                    color: #f8f8f2;
+                    border-radius: 5px;
+                    border: none;
+                    padding: 5px 15px;
+                }
+                QPushButton:hover { background-color: #4a505c; }
+            """)
             self.port_combo.setEnabled(True)
             self.baud_combo.setEnabled(True)
             self.log_area.append(">>> Serial closed")
@@ -165,7 +194,18 @@ class SerialConfigWidget(QFrame):
             self.serial.setBaudRate(int(self.baud_combo.currentText()))
             
             if self.serial.open(QIODevice.OpenModeFlag.ReadWrite):
-                self.btn_open.setText("Close")
+                self.btn_open.setText("CLOSE")
+                self.btn_open.setStyleSheet("""
+                    QPushButton {
+                        background-color: #e06c75;
+                        color: #ffffff;
+                        border-radius: 5px;
+                        border: none;
+                        padding: 5px 15px;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover { background-color: #f07c85; }
+                """)
                 self.port_combo.setEnabled(False)
                 self.baud_combo.setEnabled(False)
                 self.log_area.append(f">>> Serial {port_name} opened")

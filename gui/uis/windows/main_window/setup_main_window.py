@@ -322,43 +322,26 @@ class SetupMainWindow:
 
         # PY SLIDER 1
         self.vertical_slider_1 = PySlider(
-            margin=8,
-            bg_size=10,
-            bg_radius=5,
-            handle_margin=-3,
-            handle_size=16,
-            handle_radius=8,
+            bg_size=4,
+            bg_radius=2,
             bg_color = self.themes["app_color"]["dark_three"],
-            bg_color_hover = self.themes["app_color"]["dark_four"],
-            handle_color = self.themes["app_color"]["context_color"],
-            handle_color_hover = self.themes["app_color"]["context_hover"],
-            handle_color_pressed = self.themes["app_color"]["context_pressed"]
+            handle_color = self.themes["app_color"]["context_color"]
         )
         self.vertical_slider_1.setMinimumHeight(100)
 
         # PY SLIDER 2
         self.vertical_slider_2 = PySlider(
             bg_color = self.themes["app_color"]["dark_three"],
-            bg_color_hover = self.themes["app_color"]["dark_three"],
-            handle_color = self.themes["app_color"]["context_color"],
-            handle_color_hover = self.themes["app_color"]["context_hover"],
-            handle_color_pressed = self.themes["app_color"]["context_pressed"]
+            handle_color = self.themes["app_color"]["context_color"]
         )
         self.vertical_slider_2.setMinimumHeight(100)
 
         # PY SLIDER 3
         self.vertical_slider_3 = PySlider(
-            margin=8,
-            bg_size=10,
-            bg_radius=5,
-            handle_margin=-3,
-            handle_size=16,
-            handle_radius=8,
+            bg_size=4,
+            bg_radius=2,
             bg_color = self.themes["app_color"]["dark_three"],
-            bg_color_hover = self.themes["app_color"]["dark_four"],
-            handle_color = self.themes["app_color"]["context_color"],
-            handle_color_hover = self.themes["app_color"]["context_hover"],
-            handle_color_pressed = self.themes["app_color"]["context_pressed"]
+            handle_color = self.themes["app_color"]["context_color"]
         )
         self.vertical_slider_3.setOrientation(Qt.Horizontal)
         self.vertical_slider_3.setMaximumWidth(200)
@@ -366,10 +349,7 @@ class SetupMainWindow:
         # PY SLIDER 4
         self.vertical_slider_4 = PySlider(
             bg_color = self.themes["app_color"]["dark_three"],
-            bg_color_hover = self.themes["app_color"]["dark_three"],
-            handle_color = self.themes["app_color"]["context_color"],
-            handle_color_hover = self.themes["app_color"]["context_hover"],
-            handle_color_pressed = self.themes["app_color"]["context_pressed"]
+            handle_color = self.themes["app_color"]["context_color"]
         )
         self.vertical_slider_4.setOrientation(Qt.Horizontal)
         self.vertical_slider_4.setMaximumWidth(200)

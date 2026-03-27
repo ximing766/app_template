@@ -128,6 +128,7 @@ class SettingsPage(BasePage):
     
     def init_content(self):
         """Initialize page content"""
+        self.apply_base_style()
         scroll_widget = QScrollArea(self)
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

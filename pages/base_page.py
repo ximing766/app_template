@@ -39,7 +39,30 @@ class BasePage(QWidget):
         """Apply base styles for common widgets"""
         base_qss = """
         QComboBox, QLineEdit, QCheckBox { color: #f8f8f2; }
-        QTextEdit { background-color: rgba(30, 34, 41, 0.7); color: #f8f8f2; border: none; border-radius: 5px; }
+        QLineEdit, QTextEdit { 
+            background-color: rgba(36, 42, 56, 0.2); 
+            border: 1px solid #313d4b; 
+            border-radius: 1px; 
+            padding: 3px; 
+            color: #ffffff;
+            selection-background-color: #088bef;
+        }
+        QLineEdit:focus, QTextEdit:focus { border: 1.5px solid #477faa; background-color: rgba(27, 32, 44, 0.99); }
+
+        QCheckBox { spacing: 5px; }
+        QCheckBox::indicator {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid #888c96;
+            background-color: #21252b;
+        }
+        QCheckBox::indicator:checked {
+            background-color: #3e4451;
+            border-color: #568af2;
+        }
+        QCheckBox::indicator:hover { border-color: #564463; }
+
         QPushButton { 
             background-color: #3f444e; 
             color: #f8f8f2; 
@@ -49,13 +72,13 @@ class BasePage(QWidget):
         }
         QPushButton:hover { background-color: #4a505c; }
         QPushButton:pressed { background-color: #2c313c; }
+
         QComboBox { background-color: #3f444e; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }
         QComboBox::drop-down { border: none; }
         QComboBox QAbstractItemView { background-color: #3f444e; color: #f8f8f2; selection-background-color: #568af2; }
-        QLineEdit { background-color: #3f444e; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }
         
         QSplitter::handle {
-            background-color: #3f444e;
+            background-color: #666c77;
             margin: 1px;
             border-radius: 1px;
         }
@@ -66,10 +89,61 @@ class BasePage(QWidget):
             background-color: #568af2;
         }
         QSplitter::handle:horizontal {
-            width: 2px;
+            width: 1px;
         }
         QSplitter::handle:vertical {
-            height: 2px;
+            height: 1px;
+        }
+
+        /* QSlider - Minimalist Style */
+        QSlider { background: transparent; }
+        QSlider::groove:horizontal { background: #2c313a; height: 4px; border-radius: 2px; }
+        QSlider::handle:horizontal { background: #568af2; width: 4px; height: 12px; margin: -4px 0; border-radius: 2px; }
+        QSlider::sub-page:horizontal { background: #568af2; border-radius: 2px; }
+
+        QSlider::groove:vertical { background: #2c313a; width: 4px; border-radius: 2px; }
+        QSlider::handle:vertical { background: #568af2; width: 12px; height: 4px; margin: 0 -4px; border-radius: 2px; }
+        QSlider::sub-page:vertical { background: #568af2; border-radius: 2px; }
+
+        
+        /* QScrollBar - Minimalist Style */
+        QScrollBar:vertical {
+            background: #1e2229;
+            width: 8px;
+            margin: 0px;
+            border-radius: 4px;
+        }
+        QScrollBar::handle:vertical {
+            background: #568af2;
+            min-height: 20px;
+            border-radius: 4px;
+            margin: 1px;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+            background: none;
+        }
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            background: none;
+        }
+        QScrollBar:horizontal {
+            background: #1e2229;
+            height: 8px;
+            margin: 0px;
+            border-radius: 4px;
+        }
+        QScrollBar::handle:horizontal {
+            background: #568af2;
+            min-width: 20px;
+            border-radius: 4px;
+            margin: 1px;
+        }
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+            width: 0px;
+            background: none;
+        }
+        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+            background: none;
         }
         """
         self.setStyleSheet(base_qss)
