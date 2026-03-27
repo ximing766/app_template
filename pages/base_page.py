@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from qfluentwidgets import InfoBar, InfoBarPosition, qconfig, Theme, setCustomStyleSheet, themeColor, TableWidget
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QMessageBox, QSplitter
 
 class BasePage(QWidget):
-    page_activated = pyqtSignal(str)  # Emitted when page becomes active
-    page_deactivated = pyqtSignal(str)  # Emitted when page becomes inactive
-    data_changed = pyqtSignal(str, object)  # Emitted when page data changes
+    page_activated = Signal(str)  # Emitted when page becomes active
+    page_deactivated = Signal(str)  # Emitted when page becomes inactive
+    data_changed = Signal(str, object)  # Emitted when page data changes
     
     def __init__(self, page_id: str, parent=None):
         super().__init__(parent)
@@ -27,9 +21,6 @@ class BasePage(QWidget):
         self.setObjectName(page_id)
         
         self.init_ui()
-        
-        qconfig.themeChanged.connect(self._on_theme_changed)
-        self._apply_unified_theme()
     
     def init_ui(self):
         self.layout = QVBoxLayout(self)
@@ -40,103 +31,85 @@ class BasePage(QWidget):
 
         self._is_initialized = True
     
-    def _apply_unified_theme(self):
-        light_qss = """
-        QWidget {
-            background-color: transparent;
-            color: rgb(32, 32, 32);
-        }
-        QDialog {
-            background-color: rgb(255, 255, 255);
-            color: rgb(32, 32, 32);
-            border: 1px solid rgb(229, 231, 235);
-            border-radius: 8px;
-        }
-        """
-        dark_qss = """
-        QWidget {
-            background-color: transparent;
-            color: rgb(255, 255, 255);
-        }
-        QDialog {
-            background-color: rgb(45, 45, 45);
-            color: rgb(255, 255, 255);
-            border: 1px solid rgb(75, 85, 99);
-            border-radius: 8px;
-        }
-        """
-        self.setStyleSheet(light_qss if qconfig.theme == Theme.LIGHT else dark_qss)
+    def init_content(self):
+        """Initialize page content - override in subclasses"""
+        pass
 
-    def _on_theme_changed(self, theme: Theme):
-        self._apply_unified_theme()
-    
-    def apply_table_styling(self, table_widget):
-        light_qss = f"""
-        QTableWidget {{
-            background: transparent;
-            gridline-color: rgba(148, 163, 184, 0.4);
-        }}
+    def apply_base_style(self):
+        """Apply base styles for common widgets"""
+        base_qss = """
+        QComboBox, QLineEdit, QCheckBox { color: #f8f8f2; }
+        QTextEdit { background-color: rgba(30, 34, 41, 0.7); color: #f8f8f2; border: none; border-radius: 5px; }
+        QPushButton { 
+            background-color: #3f444e; 
+            color: #f8f8f2; 
+            border-radius: 5px; 
+            border: none; 
+            padding: 5px 15px;
+        }
+        QPushButton:hover { background-color: #4a505c; }
+        QPushButton:pressed { background-color: #2c313c; }
+        QComboBox { background-color: #3f444e; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }
+        QComboBox::drop-down { border: none; }
+        QComboBox QAbstractItemView { background-color: #3f444e; color: #f8f8f2; selection-background-color: #568af2; }
+        QLineEdit { background-color: #3f444e; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }
         
-        QTableWidget::item {{
-            background-color: rgba(218, 237, 243, 0.5);
-            color: rgb(51, 65, 85);
-        }}
-        
-        QTableWidget::item:selected {{
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 rgba(59, 130, 246, 0.2),
-                stop:1 rgba(37, 99, 235, 0.15));
-            color: rgb(204, 87, 240);
-        }}
-        
-        QTableWidget::item:focus {{
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 rgba(16, 185, 129, 0.15),
-                stop:1 rgba(5, 150, 105, 0.1));
-        }}
-        
-        QHeaderView::section {{
-            background: rgba(162, 225, 233, 0.95);
-            color: rgb(28, 108, 145);
-            font-size: 14px;
-            font-weight: bold;
-        }}
+        QSplitter::handle {
+            background-color: #3f444e;
+            margin: 1px;
+            border-radius: 1px;
+        }
+        QSplitter::handle:hover {
+            background-color: #568af2;
+        }
+        QSplitter::handle:pressed {
+            background-color: #568af2;
+        }
+        QSplitter::handle:horizontal {
+            width: 2px;
+        }
+        QSplitter::handle:vertical {
+            height: 2px;
+        }
         """
+        self.setStyleSheet(base_qss)
         
-        dark_qss = f"""
-        QTableWidget {{
+        # Ensure child splitters inherit this style
+        for splitter in self.findChildren(QSplitter):
+            splitter.setStyleSheet(base_qss)
+
+    def apply_table_styling(self, table_widget):
+        dark_qss = """
+        QTableWidget {
             background: transparent;
             gridline-color: rgba(71, 85, 105, 0.5);
-        }}
+            border: 1px solid #3f444e;
+            border-radius: 5px;
+            color: #f8f8f2;
+        }
         
-        QTableWidget::item {{
+        QTableWidget::item {
             background-color: rgba(30, 41, 59, 0.55);
-            color: rgb(226, 232, 240);
-        }}
+            padding: 5px;
+        }
         
-        QTableWidget::item:selected {{
-            background: rgba(170, 100, 236, 0.3);
-            color: rgb(12, 183, 226);
-        }}
+        QTableWidget::item:selected {
+            background: rgba(86, 138, 242, 0.3);
+            color: #ffffff;
+        }
         
-        QTableWidget::item:focus {{
-            background: rgba(173, 88, 159, 0.5);
-        }}
-        
-        QHeaderView::section {{
+        QHeaderView::section {
             background: rgba(35, 44, 71, 0.9);
             color: rgb(221, 230, 241);
             font-weight: bold;
             font-size: 14px;
-        }}
+            padding: 5px;
+            border: none;
+            border-bottom: 1px solid #3f444e;
+            border-right: 1px solid #3f444e;
+        }
         """
-        
-        # Apply the custom styling to the specific table widget
-        setCustomStyleSheet(table_widget, light_qss, dark_qss)
-    
-    def init_content(self):
-        """Initialize page content - override in subclasses"""
-        pass
+        table_widget.setStyleSheet(dark_qss)
     
     def get_page_id(self) -> str:
         """Get page identifier"""
@@ -188,51 +161,65 @@ class BasePage(QWidget):
     def __repr__(self):
         return self.__str__()
     
+    def _get_msg_box_style(self):
+        return """
+        QMessageBox {
+            background-color: #282c34;
+            color: #f8f8f2;
+            font-size: 14px;
+        }
+        QMessageBox QLabel {
+            color: #f8f8f2;
+        }
+        QMessageBox QPushButton {
+            background-color: #3f444e;
+            color: #f8f8f2;
+            border-radius: 5px;
+            border: none;
+            padding: 5px 15px;
+            min-width: 60px;
+        }
+        QMessageBox QPushButton:hover {
+            background-color: #4a505c;
+        }
+        QMessageBox QPushButton:pressed {
+            background-color: #2c313c;
+        }
+        """
+
     # Information display methods
-    def show_info(self, title: str = "信息", content: str = "", duration: int = 1000):
+    def show_info(self, title: str = "Info", content: str = "", duration: int = 1000):
         """Show info message"""
-        InfoBar.info(
-            title=title,
-            content=content,
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=duration,
-            parent=self
-        )
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(content)
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setStyleSheet(self._get_msg_box_style())
+        msg.exec()
     
-    def show_success(self, title: str = "成功", content: str = "", duration: int = 1000):
+    def show_success(self, title: str = "Success", content: str = "", duration: int = 1000):
         """Show success message"""
-        InfoBar.success(
-            title=title,
-            content=content,
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=duration,
-            parent=self
-        )
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(content)
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setStyleSheet(self._get_msg_box_style())
+        msg.exec()
     
-    def show_warning(self, title: str = "警告", content: str = "", duration: int = 2000):
+    def show_warning(self, title: str = "Warning", content: str = "", duration: int = 2000):
         """Show warning message"""
-        InfoBar.warning(
-            title=title,
-            content=content,
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=duration,
-            parent=self
-        )
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(content)
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setStyleSheet(self._get_msg_box_style())
+        msg.exec()
     
-    def show_error(self, title: str = "错误", content: str = "", duration: int = 2000):
+    def show_error(self, title: str = "Error", content: str = "", duration: int = 2000):
         """Show error message"""
-        InfoBar.error(
-            title=title,
-            content=content,
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=duration,
-            parent=self
-        )
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(content)
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setStyleSheet(self._get_msg_box_style())
+        msg.exec()

@@ -21,5 +21,5 @@ __all__ = [
 
 # Version info
 __version__ = '1.0.0'
-__author__ = 'Generic PyQt6 Template'
-__description__ = 'Page management system for PyQt6 applications'
+__author__ = 'Generic PySide6 Template'
+__description__ = 'Page management system for PySide6 applications'

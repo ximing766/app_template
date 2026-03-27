@@ -15,14 +15,14 @@
             "user_management": false
         },
         "settings": {
-            "language": "中文",
+            "language": "english",
             "autosave": true
         }
     },
     "background": {
         "enabled": true,
-        "opacity": 0.54,
-        "current_image": "assets/PIC/D_3.png",
+        "opacity": 0.0,
+        "current_image": "assets/PIC/D_1.jpg",
         "available_images": [
             "assets/PIC/D_1.jpg",
             "assets/PIC/D_3.png",
@@ -30,10 +30,10 @@
             "assets/PIC/D_5.jpg",
             "assets/PIC/D_6.png"
         ],
-        "current_index": 1
+        "current_index": 0
     },
     "theme": {
-        "current_theme": "Dark",
+        "current_theme": "light",
         "themes": {
             "light": {
                 "name": "Light Theme",

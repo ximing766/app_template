@@ -8,11 +8,11 @@
 # (at your option) any later version.
 
 from typing import Dict, List, Optional, Type, Any
-from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtWidgets import QStackedWidget
-from qfluentwidgets import FluentIcon as FIF
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QStackedWidget
 from .base_page import BasePage
 from .settings_page import SettingsPage
+from .serial_dashboard_page import SerialDashboardPage
 
 class PageInfo:
     """Information about a registered page"""
@@ -41,11 +41,11 @@ class PageInfo:
 
 class PageManager(QObject):
     """Manages application pages and navigation"""
-    page_registered = pyqtSignal(str, str)  # page_id, title
-    page_unregistered = pyqtSignal(str)  # page_id
-    page_changed = pyqtSignal(str, str)  # old_page_id, new_page_id
-    page_activated = pyqtSignal(str)  # page_id
-    page_deactivated = pyqtSignal(str)  # page_id
+    page_registered = Signal(str, str)  # page_id, title
+    page_unregistered = Signal(str)  # page_id
+    page_changed = Signal(str, str)  # old_page_id, new_page_id
+    page_activated = Signal(str)  # page_id
+    page_deactivated = Signal(str)  # page_id
     
     def __init__(self, stacked_widget: QStackedWidget = None, parent=None):
         super().__init__(parent)
@@ -56,14 +56,6 @@ class PageManager(QObject):
         self._page_order: List[str] = []
         self.user_manager = None  # Will be set by main window
         
-        self._register_default_pages()
-    
-    def _register_default_pages(self):
-        self.register_page(
-            "settings", "Settings", SettingsPage,
-            icon=FIF.SETTING, tooltip="Application Settings", order=99
-        )
-    
     def register_page(self, page_id: str, title: str, page_class: Type[BasePage],
                      icon=None, tooltip: str = "", enabled: bool = True,
                      visible: bool = True, order: int = 0, required_role: str = None) -> bool:

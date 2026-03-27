@@ -1,28 +1,13 @@
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QPixmap, QFont
-from qfluentwidgets import (Theme, setTheme, PushButton, LineEdit, ComboBox, TableWidget,ToolButton,
-                           BodyLabel, ProgressBar)
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QPixmap, QFont
 import os
 import sys
 
-def isWin11():
-    return sys.platform == 'win32' and sys.getwindowsversion().build >= 22000
-
-if isWin11():
-    from qframelesswindow import AcrylicWindow as Window
-else:
-    from qframelesswindow import FramelessWindow as Window
-
-class SplashScreen(Window):
-    finished = pyqtSignal()
+class SplashScreen(QWidget):
+    finished = Signal()
     def __init__(self, app_name="Application", logo_path=None, parent=None):
         super().__init__(parent)
         self.app_name = app_name
@@ -34,11 +19,13 @@ class SplashScreen(Window):
     def init_ui(self):
         """Initialize the splash screen UI"""
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFixedSize(400, 300)
         
         # Create a central widget with background
-        self.central_widget = QWidget()
+        self.central_widget = QWidget(self)
         self.central_widget.setObjectName("centralWidget")
+        self.central_widget.resize(400, 300)
         
         # Create layout for central widget
         layout = QVBoxLayout(self.central_widget)
@@ -46,12 +33,12 @@ class SplashScreen(Window):
         layout.setSpacing(20)
         
         # Logo label
-        self.logo_label = BodyLabel()
+        self.logo_label = QLabel()
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.load_logo()
         
         # App name label
-        self.name_label = BodyLabel(self.app_name)
+        self.name_label = QLabel(self.app_name)
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         font = QFont()
         font.setPointSize(18)
@@ -59,14 +46,19 @@ class SplashScreen(Window):
         self.name_label.setFont(font)
         
         # Status label
-        self.status_label = BodyLabel("Starting...")
+        self.status_label = QLabel("Starting...")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         # Progress bar
-        self.progress_bar = ProgressBar()
+        self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
+        self.progress_bar.setFixedHeight(6)
+        self.progress_bar.setStyleSheet("""
+            QProgressBar { border: none; border-radius: 3px; background-color: rgba(255,255,255,0.3); }
+            QProgressBar::chunk { background-color: white; border-radius: 3px; }
+        """)
         
         # Add widgets to layout
         layout.addWidget(self.logo_label)
@@ -75,17 +67,15 @@ class SplashScreen(Window):
         layout.addWidget(self.status_label)
         layout.addWidget(self.progress_bar)
         
-        # Set central widget as main layout
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.addWidget(self.central_widget)
-        
         # Set background color and styling for the central widget
         self.central_widget.setStyleSheet("""
             QWidget#centralWidget {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #a7dbdf, stop:1 #a075ca);
+                    stop:0 #2c313c, stop:1 #1e2229);
+                border-radius: 10px;
+                color: #f8f8f2;
             }
+            QLabel { color: #f8f8f2; background: transparent; }
         """)
 
         self.center_window()
@@ -111,7 +101,7 @@ class SplashScreen(Window):
     
     def center_window(self):
         """Center the splash screen on the screen"""
-        from PyQt6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - self.width()) // 2
         y = (screen.height() - self.height()) // 2

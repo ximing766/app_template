@@ -1,34 +1,17 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
 
 import sys
 import os
-from PyQt6.QtCore import Qt, QSize, QRect, pyqtSignal, QTimer, QEventLoop
-from PyQt6.QtGui import QIcon, QPixmap, QColor, QPainter, QPainterPath
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QWidget, QSpacerItem, QSizePolicy, QDialog
-from qfluentwidgets import (setThemeColor, setTheme, Theme, SplitTitleBar, isDarkTheme, 
-                            BodyLabel, CheckBox, HyperlinkButton, LineEdit, PrimaryPushButton, InfoBar, InfoBarPosition,
-                            FluentIcon as FIF)
+from PySide6.QtCore import Qt, QSize, QRect, Signal, QTimer, QEventLoop
+from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter, QPainterPath
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QWidget, QSpacerItem, QSizePolicy, QDialog, QLineEdit, QCheckBox, QPushButton, QMessageBox
 from typing import Optional
-def isWin11():
-    return sys.platform == 'win32' and sys.getwindowsversion().build >= 22000
 
-if isWin11():
-    from qframelesswindow import AcrylicWindow as Window
-    print('Use AcrylicWindow on Win11')
-else:
-    from qframelesswindow import FramelessWindow as Window
-    print('Use FramelessWindow on non-Win11')
-
-class LoginDialog(Window):
-    login_successful = pyqtSignal(str)  # username
-    login_failed = pyqtSignal(str)      # error message
+class LoginDialog(QDialog):
+    login_successful = Signal(str)  # username
+    login_failed = Signal(str)      # error message
     def __init__(self, parent=None):
         super().__init__(parent)
         self.user_manager = None  # Will be set by LoginController
@@ -63,7 +46,7 @@ class LoginDialog(Window):
             # Scale image to fit the label size while maintaining aspect ratio
             scaled_pixmap = background_pixmap.scaled(
                 500, 500, 
-                Qt.AspectRatioMode.KeepAspectRatio,  # Changed from KeepAspectRatioByExpanding
+                Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
             self.label.setPixmap(scaled_pixmap)
@@ -89,7 +72,7 @@ class LoginDialog(Window):
         widget_size_policy.setHorizontalStretch(1)  # Allow horizontal stretching
         widget_size_policy.setVerticalStretch(0)
         self.widget.setSizePolicy(widget_size_policy)
-        self.widget.setStyleSheet("background-color: rgba(95, 140, 170, 0.1);")
+        self.widget.setStyleSheet("background-color: #2c313c; color: #f8f8f2;")
         
         # Right panel layout
         self.verticalLayout_2 = QVBoxLayout(self.widget)
@@ -156,26 +139,28 @@ class LoginDialog(Window):
         spacerItem1 = QSpacerItem(20, 15, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.verticalLayout_2.addItem(spacerItem1)
         
-        # Username input - renamed to match login_dialog.py
-        self.username_edit = LineEdit(self.widget)
+        # Username input
+        self.username_edit = QLineEdit(self.widget)
         self.username_edit.setClearButtonEnabled(True)
         self.username_edit.setFixedHeight(40)
         self.username_edit.setText("admin")  # 设置默认值为 admin
+        self.username_edit.setStyleSheet("background-color: #1e2229; border: 1px solid #3f444e; border-radius: 5px; padding: 0 10px;")
         self.verticalLayout_2.addWidget(self.username_edit)
         
-        # Password input - renamed to match login_dialog.py
-        self.password_edit = LineEdit(self.widget)
-        self.password_edit.setEchoMode(LineEdit.EchoMode.Password)
+        # Password input
+        self.password_edit = QLineEdit(self.widget)
+        self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setClearButtonEnabled(True)
         self.password_edit.setFixedHeight(40)
+        self.password_edit.setStyleSheet("background-color: #1e2229; border: 1px solid #3f444e; border-radius: 5px; padding: 0 10px;")
         self.verticalLayout_2.addWidget(self.password_edit)
         
         # Small spacer
         spacerItem2 = QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.verticalLayout_2.addItem(spacerItem2)
         
-        # Remember password checkbox - renamed to match login_dialog.py
-        self.remember_checkbox = CheckBox(self.widget)
+        # Remember password checkbox
+        self.remember_checkbox = QCheckBox("Remember me", self.widget)
         self.remember_checkbox.setChecked(True)
         self.verticalLayout_2.addWidget(self.remember_checkbox)
         
@@ -183,10 +168,11 @@ class LoginDialog(Window):
         spacerItem3 = QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.verticalLayout_2.addItem(spacerItem3)
         
-        # Login button - renamed to match login_dialog.py
-        self.login_button = PrimaryPushButton(self.widget)
+        # Login button
+        self.login_button = QPushButton("Login", self.widget)
         self.login_button.clicked.connect(self.handle_login)  # Connect login function
-        self.login_button.setFixedHeight(35)
+        self.login_button.setFixedHeight(40)
+        self.login_button.setStyleSheet("background-color: #568af2; color: white; border-radius: 5px; font-weight: bold;")
         self.verticalLayout_2.addWidget(self.login_button)
         
         # Small spacer
@@ -194,7 +180,8 @@ class LoginDialog(Window):
         self.verticalLayout_2.addItem(spacerItem4)
         
         # Forgot password link
-        self.pushButton_2 = HyperlinkButton(self.widget)
+        self.pushButton_2 = QPushButton("Forgot password?", self.widget)
+        self.pushButton_2.setStyleSheet("background-color: transparent; color: #568af2; text-decoration: underline; border: none;")
         self.verticalLayout_2.addWidget(self.pushButton_2)
         
         # Bottom spacer
@@ -215,13 +202,9 @@ class LoginDialog(Window):
         self.pushButton_2.setText("Forgot password?")   
         
     def setupWindow(self):
-        self.setTitleBar(SplitTitleBar(self))
-        self.titleBar.raise_()
-        
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.label.setScaledContents(False)
-        # self.setWindowTitle('Login')
         self.setWindowOpacity(1)
-        
         
         # 设置初始大小，但允许调整大小
         self.resize(800, 500)
@@ -236,7 +219,6 @@ class LoginDialog(Window):
     def connect_signals(self):
         self.username_edit.returnPressed.connect(self.password_edit.setFocus)
         self.password_edit.returnPressed.connect(self.handle_login)
-        self.login_button.clicked.connect(self.handle_login)
     
     def handle_login(self):
         username = self.username_edit.text().strip()
@@ -259,26 +241,12 @@ class LoginDialog(Window):
         self.login_successful.emit(username)
     
     def show_error(self, message: str):
-        InfoBar.error(
-            title="登录失败",
-            content=message,
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=3000,
-            parent=self
-        )
+        QMessageBox.warning(self, "登录失败", message)
+        self.login_button.setEnabled(True)
+        self.login_button.setText("Login")
     
     def show_success(self, message: str):
-        InfoBar.success(
-            title="登录成功",
-            content=message,
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=2000,
-            parent=self
-        )
+        pass # Optional to show success dialog
     
     def get_credentials(self) -> tuple[str, str]:
         return self.username_edit.text().strip(), self.password_edit.text()
@@ -292,7 +260,7 @@ class LoginDialog(Window):
         self._dialog_result = True
         if self._event_loop:
             self._event_loop.quit()
-        self.close()
+        super().accept()
     
     def exec(self):
         """Execute as modal dialog with custom event loop"""
@@ -351,8 +319,6 @@ class LoginController:
         self.login = LoginDialog(self.parent)
         
         self.login.login_successful.connect(self.handle_login_attempt)
-        
-        # TODO: Implement remember username functionality
         
         result = self.login.exec()   # Block and wait for user login completion
         return result

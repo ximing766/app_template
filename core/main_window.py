@@ -1,30 +1,25 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
 
 import sys
 import os
 import json
 from pathlib import Path
-from PyQt6.QtCore import Qt, QSize, QPoint, QTimer, pyqtSignal, QEvent
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFrame
-from PyQt6.QtGui import QFont, QColor, QPalette, QPixmap, QPainter, QIcon
-from qfluentwidgets import (
-    FluentWindow, FluentIcon as FIF, NavigationItemPosition,
-    setTheme, Theme, MessageBox
-)
+
+from qt_core import *
+from gui.core.json_settings import Settings
+from gui.core.json_themes import Themes
+from gui.uis.windows.main_window.ui_main import UI_MainWindow
+from gui.uis.windows.main_window.functions_main_window import MainFunctions
+from gui.uis.windows.main_window.setup_main_window import SetupMainWindow
+from gui.widgets import *
 
 from config.config_manager import ConfigManager
 from pages import SettingsPage, BasePage, PageManager
 from .splash_screen import show_splash_screen
 
-
-class MainWindow(FluentWindow):
+class MainWindow(QMainWindow):
     def __init__(self, app_name="Generic App", logo_path=None, user_manager=None):
         super().__init__()
         
@@ -36,6 +31,14 @@ class MainWindow(FluentWindow):
         if logo_path and Path(logo_path).exists():
             self.setWindowIcon(QIcon(str(logo_path)))
         
+        # Load widgets from PyOneDark
+        self.ui = UI_MainWindow()
+        self.ui.setup_ui(self)
+
+        # LOAD SETTINGS
+        settings = Settings()
+        self.settings = settings.items
+
         # Initialize managers
         self.user_manager = user_manager
         self.config_manager = ConfigManager()
@@ -55,7 +58,7 @@ class MainWindow(FluentWindow):
                     self.config_manager.load_config_from_dict(user_config)
         
         # Window properties
-        self.drag_pos = QPoint()
+        self.dragPos = QPoint()
         self.background_cache = None
         self.last_window_size = QSize()
         self.splash_screen = None
@@ -64,12 +67,43 @@ class MainWindow(FluentWindow):
         self.pages = {}
         self.nav_items = {}
         
+        self.hide_grips = True
+        
+        # Add background painting support
+        self.background_cache = None
+        self.last_window_size = QSize()
+        
+        # Remove default title bar if setting allows
+        if self.settings["custom_title_bar"]:
+            self.setWindowFlag(Qt.FramelessWindowHint)
+            self.setAttribute(Qt.WA_TranslucentBackground)
+            # Add grips
+            self.left_grip = PyGrips(self, "left", self.hide_grips)
+            self.right_grip = PyGrips(self, "right", self.hide_grips)
+            self.top_grip = PyGrips(self, "top", self.hide_grips)
+            self.bottom_grip = PyGrips(self, "bottom", self.hide_grips)
+            self.top_left_grip = PyGrips(self, "top_left", self.hide_grips)
+            self.top_right_grip = PyGrips(self, "top_right", self.hide_grips)
+            self.bottom_left_grip = PyGrips(self, "bottom_left", self.hide_grips)
+            self.bottom_right_grip = PyGrips(self, "bottom_right", self.hide_grips)
+
+        # Set Signals
+        self.ui.left_menu.clicked.connect(self.btn_clicked)
+        self.ui.left_menu.released.connect(self.btn_released)
+        self.ui.title_bar.clicked.connect(self.btn_clicked)
+        self.ui.title_bar.released.connect(self.btn_released)
+        self.ui.left_column.clicked.connect(self.btn_clicked)
+        self.ui.left_column.released.connect(self.btn_released)
+
+        # Add Title
+        if self.settings["custom_title_bar"]:
+            self.ui.title_bar.set_title(self.app_name)
+        else:
+            self.ui.title_bar.set_title(self.app_name)
+
         self.show_splash_screen()
+        QTimer.singleShot(100, self.init_ui)
         
-        QTimer.singleShot(100, self.init_ui)   # XXX: 待定main中Page注册完毕
-        
-        self.apply_theme()
-    
     def show_splash_screen(self):
         """Show splash screen during initialization"""
         self.splash_screen = show_splash_screen(self.app_name, self.logo_path, duration=2000)
@@ -85,123 +119,176 @@ class MainWindow(FluentWindow):
     def init_ui(self):
         """Initialize the user interface"""
         self.setMinimumSize(1000, 700)
-        self.setGeometry(100, 100, 1200, 800)
+        self.resize(1200, 800)
         
-        self.setup_navigation() # 获取可见页面
+        # Clear original pages in stacked widget
+        while self.ui.load_pages.pages.count() > 0:
+            widget = self.ui.load_pages.pages.widget(0)
+            self.ui.load_pages.pages.removeWidget(widget)
+            widget.deleteLater()
+
+        self.setup_navigation()
         
+        # Setup settings widget in right column
+        self.settings_page = SettingsPage(self.config_manager, self)
+        self.settings_page.background_changed.connect(self.on_background_changed)
+
         # Pass user_manager to settings page if available
         if hasattr(self, 'user_manager') and self.user_manager:
-            settings_page = self.page_manager.get_page_instance('settings')
-            if settings_page:
-                settings_page.user_manager = self.user_manager
+            self.settings_page.user_manager = self.user_manager
             
-            # Connect user manager signals to refresh page permissions
             self.user_manager.user_logged_in.connect(self.on_user_login_changed)
             self.user_manager.user_logged_out.connect(self.on_user_login_changed)
         
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
-        self.setWindowOpacity(1.0)
-    
-    def setup_navigation(self):  # BM: 添加所有注册页面到nav bar
-        """Setup navigation bar with registered pages"""
-        visible_pages = self.page_manager.get_visible_pages()  # XXX:页面级权限管理
-        # print(f"setup_navigation, visible pages: {visible_pages.keys()}")
+        # Clear existing layout and add settings page
+        layout = self.ui.right_column.menu_1.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
+            layout.addWidget(self.settings_page)
+            
+        # Add Title bar menus (like Settings button)
+        title_bar_menus = [
+            {
+                "btn_icon": "icon_settings.svg",
+                "btn_id": "btn_top_settings",
+                "btn_tooltip": "Settings",
+                "is_active": False
+            }
+        ]
+        self.ui.title_bar.add_menus(title_bar_menus)
         
-        # Sort pages by order
+        # Set initial page
+        visible_pages = self.page_manager.get_visible_pages()
+        sorted_pages = sorted(visible_pages.items(), key=lambda x: x[1].order)
+        if sorted_pages:
+            first_page_id = sorted_pages[0][0]
+            if first_page_id in self.pages:
+                MainFunctions.set_page(self, self.pages[first_page_id])
+                self.ui.left_menu.select_only_one(f"btn_{first_page_id}")
+    
+    def toggle_settings_menu(self):
+        """Toggle the right column for settings"""
+        MainFunctions.set_right_column_menu(self, self.ui.right_column.menu_1)
+        MainFunctions.toggle_right_column(self)
+    
+    def theme_changed(self):
+        """Handle theme change signal"""
+        MainFunctions.theme_changed(self)
+    
+    def setup_navigation(self):
+        """Setup navigation bar with registered pages"""
+        visible_pages = self.page_manager.get_visible_pages()
         sorted_pages = sorted(visible_pages.items(), key=lambda x: x[1].order)
         
-        # Add pages to navigation
+        left_menus = []
+        
         for page_id, page_info in sorted_pages:
             if page_info.enabled and page_info.visible:
-                if page_id == "settings":
-                    # Settings page needs special parameters
-                    page_instance = page_info.create_instance(self.config_manager, self)
-                    
-                    # Connect settings page signals
-                    page_instance.background_changed.connect(self.on_background_changed)
-                else:
-                    # Other pages use default parameters
-                    page_instance = page_info.create_instance(self)
+                page_instance = page_info.create_instance(self)
                 
-                # Determine navigation position
-                if page_info.order >= 90:  # Settings and other bottom items
-                    position = NavigationItemPosition.BOTTOM
-                else:
-                    position = NavigationItemPosition.TOP
-                
-                # Add to navigation
-                nav_item = self.addSubInterface(
-                    page_instance, 
-                    page_info.icon or FIF.DOCUMENT, 
-                    page_info.title, 
-                    position=position
-                )
-                
+                # Add page to Stacked Widget
+                self.ui.load_pages.pages.addWidget(page_instance)
                 self.pages[page_id] = page_instance
-                self.nav_items[page_id] = nav_item
-    
+                
+                # Determine icon
+                icon_name = "icon_widgets.svg" # Default
+                if page_id == "serial_dashboard": icon_name = "icon_restore.svg"
+                elif page_id == "user_management": icon_name = "icon_add_user.svg"
+
+                is_top = page_info.order < 90
+
+                menu_item = {
+                    "btn_icon" : icon_name,
+                    "btn_id" : f"btn_{page_id}",
+                    "btn_text" : page_info.title,
+                    "btn_tooltip" : page_info.tooltip,
+                    "show_top" : is_top,
+                    "is_active" : False
+                }
+                left_menus.append(menu_item)
+                
+        # Add menus to PyOneDark left menu
+        self.ui.left_menu.add_menus(left_menus)
+
+    def btn_clicked(self):
+        btn = SetupMainWindow.setup_btns(self)
+        if not btn: return
+        
+        btn_id = btn.objectName()
+
+        # Handle top settings
+        if btn_id == "btn_top_settings":
+            self.toggle_settings_menu()
+
+        # Handle page navigation
+        elif btn_id.startswith("btn_") and btn_id[4:] in self.pages:
+            page_id = btn_id[4:]
+            self.ui.left_menu.select_only_one(btn_id)
+            MainFunctions.set_page(self, self.pages[page_id])
+
+    def btn_released(self):
+        pass
+
+    def resizeEvent(self, event):
+        SetupMainWindow.resize_grips(self)
+
     def mousePressEvent(self, event):
-        """Handle mouse events for navigation"""
-        # Handle mouse side buttons for page navigation
-        if hasattr(self, 'stackedWidget') and self.stackedWidget:
-            current_idx = self.stackedWidget.currentIndex()
-            total_pages = self.stackedWidget.count()
-            
-            if event.button() == Qt.MouseButton.XButton1:  # Forward button
-                new_idx = (current_idx + 1) % total_pages
-                self.stackedWidget.setCurrentIndex(new_idx)
-                self._update_navigation_selection(new_idx)
-                event.accept()
-                return
-            elif event.button() == Qt.MouseButton.XButton2:  # Back button
-                new_idx = (current_idx - 1 + total_pages) % total_pages
-                self.stackedWidget.setCurrentIndex(new_idx)
-                self._update_navigation_selection(new_idx)
-                event.accept()
-                return
-        
-        super().mousePressEvent(event)
-    
-    def _update_navigation_selection(self, index):
-        """Update navigation selection based on page index"""
-        if hasattr(self, 'navigationInterface') and index < self.stackedWidget.count():
-            widget = self.stackedWidget.widget(index)
-            if widget and hasattr(widget, 'objectName'):
-                self.navigationInterface.setCurrentItem(widget.objectName())
-    
-    def paintEvent(self, event):
-        """Handle background painting"""
-        background_config = self.config_manager.get_background_config()
-        
-        if not background_config.get('enabled', False):
-            super().paintEvent(event)
-            return
-        
-        # Cache background for performance
-        if not self.background_cache or self.size() != self.last_window_size:
-            self._update_background_cache(background_config)
-        
-        if self.background_cache:
-            painter = QPainter(self)
-            painter.setOpacity(background_config.get('opacity', 1.0))
-            
-            # Fill the entire window with the background
-            painter.drawPixmap(0, 0, self.width(), self.height(), self.background_cache)
+        self.dragPos = event.globalPos()
+
+    def on_user_login_changed(self): 
+        if self.user_manager and self.user_manager.is_logged_in():
+            current_user = self.user_manager.get_current_user()
+            if current_user:
+                self.config_manager.set_current_user(current_user['username'])
+                user_config = self.user_manager.load_user_config(current_user['username'])
+                if user_config:
+                    self.config_manager.load_config_from_dict(user_config)
         else:
-            super().paintEvent(event)
+            self.config_manager.set_current_user(None)
+            self.config_manager.reload_config()
+        
+        if hasattr(self, 'page_manager'):
+            self.page_manager.refresh_page_permissions()
     
+    def on_background_changed(self, bg_path):
+        self.background_cache = None
+        self.update()
+
+    def paintEvent(self, event):
+        background_config = self.config_manager.get_background_config()
+        if background_config.get('enabled', False):
+            if not self.background_cache or self.size() != self.last_window_size:
+                self._update_background_cache(background_config)
+            
+            if self.background_cache:
+                painter = QPainter(self)
+                painter.setOpacity(background_config.get('opacity', 1.0))
+                painter.drawPixmap(0, 0, self.width(), self.height(), self.background_cache)
+                
+                # Make the app background transparent so we can see the window background
+                self.ui.window.setStyleSheet("#pod_bg_app { background-color: transparent; border: none; }")
+                self.ui.central_widget.setStyleSheet("background: transparent;")
+        else:
+            # Restore default style if background is disabled
+            theme = Themes().items
+            self.ui.window.setStyleSheet(f"#pod_bg_app {{ background-color: {theme['app_color']['bg_one']}; border: 2px solid {theme['app_color']['bg_two']}; }}")
+        
+        super().paintEvent(event)
+
     def _update_background_cache(self, background_config):
-        """Update the background cache"""
         current_image = background_config.get('current_image')
         if not current_image:
             return
         
         background_path = Path(current_image)
         if not background_path.is_absolute():
-            # Assume relative to application directory
             app_dir = Path(__file__).parent.parent
             background_path = app_dir / current_image
-        
+            
         if background_path.exists():
             size = self.size()
             background = QPixmap(str(background_path))
@@ -212,94 +299,7 @@ class MainWindow(FluentWindow):
                     Qt.TransformationMode.SmoothTransformation
                 )
                 self.last_window_size = size
-            else:
-                print(f"Failed to load image: {background_path}")
-        else:
-            print(f"Background image not found: {background_path}")
 
-    # BUG: 登陆完成时mainwindow还没有创建,这里不会收到信号, 预留给未来切换用户
-    def on_user_login_changed(self): 
-        print("receive login change signal")
-        """Handle user login/logout to refresh page permissions"""
-        # Switch to user-specific configuration if logged in
-        if self.user_manager and self.user_manager.is_logged_in():
-            current_user = self.user_manager.get_current_user()
-            if current_user:
-                # Set current user in config manager
-                self.config_manager.set_current_user(current_user['username'])
-                # Load user-specific configuration
-                user_config = self.user_manager.load_user_config(current_user['username'])
-                if user_config:
-                    self.config_manager.load_config_from_dict(user_config)
-        else:
-            # Clear current user and reload default configuration when logged out
-            self.config_manager.set_current_user(None)
-            self.config_manager.reload_config()
-        
-        if hasattr(self, 'page_manager'):
-            # Refresh page permissions
-            self.page_manager.refresh_page_permissions()
-            
-            # Rebuild navigation to show/hide pages based on new permissions
-            self.setup_navigation()
-            
-        # Apply theme and background from the loaded configuration
-        self.apply_theme()
-        self.update()  # Refresh background
-    
-    def on_background_changed(self, background_path):
-        """Handle background change from settings page"""
-        self.background_cache = None
-        self.update()
-    
-    def apply_theme(self):
-        """Apply theme to the application"""
-        try:
-            current_theme = self.config_manager.get_theme()
-
-            if current_theme.lower() == "dark":
-                setTheme(Theme.DARK)
-            else:
-                setTheme(Theme.LIGHT)
-            
-        except Exception as e:
-            print(f"Error applying theme: {e}")
-    
-    def show_help_dialog(self):
-        """Show help dialog"""
-        help_content = f"""
-        <h2>🚀 {self.app_name} 使用指南</h2>
-        <h3>📊 功能特性</h3>
-        """
-        
-        w = MessageBox(
-            title='帮助支持',
-            content=help_content,
-            parent=self
-        )
-        w.yesButton.setText('我知道了')
-        w.cancelButton.hide()
-        w.exec()
-    
-    def show_about_dialog(self):
-        """Show about dialog"""
-        about_content = f"""
-        <h3>📋 应用信息</h3>
-        <p><b>应用名称：</b>{self.app_name}</p>
-        <p><b>版本：</b>v1.0.0</p>
-        <p><b>构建日期：</b>2025年1月</p>
-        """
-        
-        w = MessageBox(
-            title=f'关于 {self.app_name}',
-            content=about_content,
-            parent=self
-        )
-        w.yesButton.setText('确定')
-        w.cancelButton.hide()
-        w.exec()
-    
     def closeEvent(self, event):
-        """Handle application close event"""
         self.config_manager.save_config()
         super().closeEvent(event)

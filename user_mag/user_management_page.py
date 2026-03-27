@@ -7,17 +7,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QTableWidget, QTableWidgetItem, QPushButton,
                             QLineEdit, QComboBox, QMessageBox, QDialog,
                             QFormLayout, QDialogButtonBox, QHeaderView,
                             QFrame, QSpacerItem, QSizePolicy, QGroupBox)
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
-from PyQt6.QtGui import QFont, QIcon, QColor
-from qfluentwidgets import (PushButton, LineEdit, ComboBox, TableWidget,
-                           ToolButton,
-                           BodyLabel, setFont, FluentIcon as FIF, 
-                           setCustomStyleSheet, isDarkTheme, themeColor)
+from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtGui import QFont, QIcon, QColor
 from typing import Dict, Any, List, Optional
 
 from pages import BasePage
@@ -51,36 +47,36 @@ class UserDialog(QDialog):
         form_layout.setSpacing(10)
         
         # Username field
-        self.username_edit = LineEdit()
+        self.username_edit = QLineEdit()
         self.username_edit.setPlaceholderText("请输入用户名")
         if self.is_edit:
             self.username_edit.setEnabled(False)  # Cannot change username
         form_layout.addRow("用户名:", self.username_edit)
         
         # Password field
-        self.password_edit = LineEdit()
-        self.password_edit.setEchoMode(LineEdit.EchoMode.Password)
+        self.password_edit = QLineEdit()
+        self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setPlaceholderText("请输入密码" if not self.is_edit else "留空则不修改密码")
         form_layout.addRow("密码:", self.password_edit)
         
         # Full name field
-        self.fullname_edit = LineEdit()
+        self.fullname_edit = QLineEdit()
         self.fullname_edit.setPlaceholderText("请输入全名")
         form_layout.addRow("全名:", self.fullname_edit)
         
         # Email field
-        self.email_edit = LineEdit()
+        self.email_edit = QLineEdit()
         self.email_edit.setPlaceholderText("请输入邮箱")
         form_layout.addRow("邮箱:", self.email_edit)
         
         # Role field
-        self.role_combo = ComboBox()
+        self.role_combo = QComboBox()
         self.role_combo.addItems(["user", "admin"])
         form_layout.addRow("角色:", self.role_combo)
         
         # Status field (for edit only)
         if self.is_edit:
-            self.status_combo = ComboBox()
+            self.status_combo = QComboBox()
             self.status_combo.addItems(["激活", "禁用"])
             form_layout.addRow("状态:", self.status_combo)
         
@@ -92,8 +88,8 @@ class UserDialog(QDialog):
         # Buttons
         button_layout = QHBoxLayout()
         
-        self.cancel_button = PushButton("取消")
-        self.save_button = PushButton("保存" if self.is_edit else "创建")
+        self.cancel_button = QPushButton("取消")
+        self.save_button = QPushButton("保存" if self.is_edit else "创建")
         self.save_button.setDefault(True)
         
         button_layout.addStretch()
@@ -268,13 +264,11 @@ class UserManagementPage(BasePage):
         toolbar_layout = QHBoxLayout()
         
         # Add user button
-        self.add_user_btn = PushButton("添加用户")
-        self.add_user_btn.setIcon(FIF.ADD)
+        self.add_user_btn = QPushButton("添加用户")
         self.add_user_btn.clicked.connect(self.add_user)
         
         # Refresh button
-        self.refresh_btn = ToolButton(FIF.SYNC)
-        self.refresh_btn.setIcon(FIF.SYNC)
+        self.refresh_btn = QPushButton("刷新")
         self.refresh_btn.clicked.connect(self.load_users)
         
         toolbar_layout.addWidget(self.add_user_btn)
@@ -283,7 +277,7 @@ class UserManagementPage(BasePage):
         
         self.layout.addLayout(toolbar_layout)
         
-        self.users_table = TableWidget(self)
+        self.users_table = QTableWidget(self)
         self.users_table.setColumnCount(7)
         self.users_table.setHorizontalHeaderLabels(
             ["ID", "Name", "Full Name", "Email", "Role", "Status", "Actions"]
@@ -292,13 +286,9 @@ class UserManagementPage(BasePage):
         # Enhanced table styling with theme support
         self.users_table.verticalHeader().hide()                    # Hide row numbers
         self.users_table.setAlternatingRowColors(True)              # Zebra stripes
-        self.users_table.setBorderVisible(True)                     # Border visible
-        self.users_table.setBorderRadius(8)                         # 8px border radius
         self.users_table.resizeColumnsToContents()                  # Auto-resize columns
 
         self.apply_table_styling(self.users_table)
-
-        setFont(self.users_table, 13, QFont.Weight.Medium)          # Global 13pt medium font
 
         # Header styling improvements
         header = self.users_table.horizontalHeader()
@@ -318,7 +308,7 @@ class UserManagementPage(BasePage):
         self.layout.addWidget(self.users_table)
         
         # Status bar
-        self.status_label = BodyLabel("就绪")
+        self.status_label = QLabel("就绪")
         self.layout.addWidget(self.status_label)
     
     def load_users(self):
@@ -373,14 +363,14 @@ class UserManagementPage(BasePage):
         actions_layout.setSpacing(5)
         
         # Edit button
-        edit_btn = ToolButton(FIF.EDIT)
+        edit_btn = QPushButton("Edit")
         edit_btn.setFixedSize(60, 25)
         edit_btn.clicked.connect(lambda: self.edit_user(user))
         
         # Delete button (disabled for admin user)
-        delete_btn = ToolButton(FIF.DELETE)
+        delete_btn = QPushButton("Delete")
         delete_btn.setFixedSize(60, 25)
-        delete_btn.setStyleSheet("QToolButton { background-color: #f34f4f;}")
+        delete_btn.setStyleSheet("QPushButton { background-color: #f34f4f; color: white;}")
         delete_btn.clicked.connect(lambda: self.delete_user(user))
         
         if user['username'] == 'admin':

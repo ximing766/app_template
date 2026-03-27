@@ -15,25 +15,25 @@
             "user_management": true
         },
         "settings": {
-            "language": "中文",
+            "language": "english",
             "autosave": true
         }
     },
     "background": {
         "enabled": true,
-        "opacity": 1.0,
-        "current_image": "assets/PIC/nature3.jpg",
+        "opacity": 0.76,
+        "current_image": "assets/PIC/D_1.jpg",
         "available_images": [
-            "assets/PIC/carton2.jpg",
-            "assets/PIC/color2.jpg",
-            "assets/PIC/landscape1.jpg",
-            "assets/PIC/nature1.jpg",
-            "assets/PIC/nature3.jpg"
+            "assets/PIC/D_1.jpg",
+            "assets/PIC/D_3.png",
+            "assets/PIC/D_4.jpg",
+            "assets/PIC/D_5.jpg",
+            "assets/PIC/D_6.png"
         ],
-        "current_index": 4
+        "current_index": 0
     },
     "theme": {
-        "current_theme": "Dark",
+        "current_theme": "Light",
         "themes": {
             "light": {
                 "name": "Light Theme",

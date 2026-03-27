@@ -13,7 +13,7 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 # Simplified import - main.py already adds project root to sys.path
 from database import DatabaseManager, UserDatabase, User
@@ -57,11 +57,11 @@ class UserSession:
 
 class UserManager(QObject):
     """Manages user authentication and database operations"""
-    user_logged_in  = pyqtSignal(str)  # username
-    user_logged_out = pyqtSignal()
-    user_created    = pyqtSignal(str)  # username
-    user_updated    = pyqtSignal(str)  # username
-    user_deleted    = pyqtSignal(str)  # username
+    user_logged_in = Signal(str)      # username
+    user_logged_out = Signal()
+    user_created = Signal(str)        # username
+    user_updated = Signal(str)        # username
+    user_deleted = Signal(str)        # username
     
     def __init__(self, config_dir: Optional[str] = None):
         super().__init__()
