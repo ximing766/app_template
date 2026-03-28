@@ -204,6 +204,29 @@ class PyTitleButton(QPushButton):
         self._set_icon_path = icon_path
         self.repaint()
 
+    def update_colors(self, bg_color, bg_color_hover, bg_color_pressed, 
+                      icon_color, icon_color_hover, icon_color_pressed, icon_color_active,
+                      dark_one, context_color, text_foreground):
+        """Update the button colors"""
+        self._bg_color = bg_color
+        self._bg_color_hover = bg_color_hover
+        self._bg_color_pressed = bg_color_pressed
+        self._icon_color = icon_color
+        self._icon_color_hover = icon_color_hover
+        self._icon_color_pressed = icon_color_pressed
+        self._icon_color_active = icon_color_active
+        self._context_color = context_color
+        
+        # Update current state
+        self._set_bg_color = bg_color
+        self._set_icon_color = icon_color
+        
+        # Update tooltip if exists
+        if hasattr(self, '_tooltip'):
+            self._tooltip.update_colors(dark_one, context_color, text_foreground)
+        
+        self.update()
+
     # MOVE TOOLTIP
     # ///////////////////////////////////////////////////////////////
     def move_tooltip(self):
@@ -269,3 +292,13 @@ class _ToolTip(QLabel):
         self.shadow.setYOffset(0)
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
+    
+    def update_colors(self, dark_one, context_color, text_foreground):
+        """Update tooltip colors"""
+        style = self.style_tooltip.format(
+            _dark_one = dark_one,
+            _context_color = context_color,
+            _text_foreground = text_foreground
+        )
+        self.setStyleSheet(style)
+        self.update()

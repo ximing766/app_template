@@ -226,7 +226,12 @@ class PyTitleBar(QWidget):
     # SET TITLE BAR TEXT
     # ///////////////////////////////////////////////////////////////
     def set_title(self, title):
-        self.title_label.setText(title)
+        # Enhance the title by adding some HTML formatting to make it look modern
+        enhanced_title = f"""
+            <span style='font-weight: 600; color: {self._context_color};'>{title.split()[0]}</span>
+            <span style='font-weight: normal; color: {self._text_foreground};'>{' '.join(title.split()[1:]) if len(title.split()) > 1 else ''}</span>
+        """
+        self.title_label.setText(enhanced_title)
 
     # MAXIMIZE / RESTORE
     # maximize and restore parent window
@@ -358,3 +363,49 @@ class PyTitleBar(QWidget):
 
         # ADD TO LAYOUT
         self.title_bar_layout.addWidget(self.bg)
+    
+    def update_colors(self, dark_one, bg_color, div_color, btn_bg_color, 
+                      btn_bg_color_hover, btn_bg_color_pressed, icon_color, 
+                      icon_color_hover, icon_color_pressed, icon_color_active, 
+                      context_color, text_foreground):
+        """Update the colors for the title bar and its buttons"""
+        self._dark_one = dark_one
+        self._bg_color = bg_color
+        self._div_color = div_color
+        self._btn_bg_color = btn_bg_color
+        self._btn_bg_color_hover = btn_bg_color_hover
+        self._btn_bg_color_pressed = btn_bg_color_pressed
+        self._icon_color = icon_color
+        self._icon_color_hover = icon_color_hover
+        self._icon_color_pressed = icon_color_pressed
+        self._icon_color_active = icon_color_active
+        self._context_color = context_color
+        self._text_foreground = text_foreground
+        
+        # Update background
+        self.bg.setStyleSheet(f"background-color: {bg_color}; border-radius: {self._radius}px;")
+        
+        # Update div colors
+        self.div_1.set_color(div_color)
+        self.div_2.set_color(div_color)
+        self.div_3.set_color(div_color)
+        
+        # Update buttons
+        self.minimize_button.update_colors(btn_bg_color, btn_bg_color_hover, btn_bg_color_pressed, 
+                                             icon_color, icon_color_hover, icon_color_pressed, icon_color_active,
+                                             dark_one, context_color, text_foreground)
+        self.maximize_restore_button.update_colors(btn_bg_color, btn_bg_color_hover, btn_bg_color_pressed, 
+                                                     icon_color, icon_color_hover, icon_color_pressed, icon_color_active,
+                                                     dark_one, context_color, text_foreground)
+        self.close_button.update_colors(btn_bg_color, btn_bg_color_hover, context_color, 
+                                        icon_color, icon_color_hover, icon_color_pressed, icon_color_active,
+                                        dark_one, context_color, text_foreground)
+        
+        # Update custom buttons if any
+        for btn in self.findChildren(PyTitleButton):
+            if btn not in [self.minimize_button, self.maximize_restore_button, self.close_button]:
+                btn.update_colors(btn_bg_color, btn_bg_color_hover, btn_bg_color_pressed, 
+                                   icon_color, icon_color_hover, icon_color_pressed, icon_color_active,
+                                   dark_one, context_color, text_foreground)
+        
+        self.update()

@@ -93,6 +93,10 @@ class ConfigManager:
                         "background_color": "#202020"
                     }
                 }
+            },
+            "font": {
+                "family": "Courier New",
+                "size": 10
             }
         }
         
@@ -167,6 +171,29 @@ class ConfigManager:
         if "theme" not in self._config:
             self._config["theme"] = {}
         self._config["theme"]["current_theme"] = theme_name
+        self._save_json_config(self.config_path, self._config)
+
+    # Font configuration methods
+    def get_font_family(self) -> str:
+        """Get current font family"""
+        return self._config.get("font", {}).get("family", "Courier New")
+
+    def set_font_family(self, font_family: str):
+        """Set font family"""
+        if "font" not in self._config:
+            self._config["font"] = {}
+        self._config["font"]["family"] = font_family
+        self._save_json_config(self.config_path, self._config)
+
+    def get_font_size(self) -> int:
+        """Get current font size"""
+        return self._config.get("font", {}).get("size", 10)
+
+    def set_font_size(self, font_size: int):
+        """Set font size"""
+        if "font" not in self._config:
+            self._config["font"] = {}
+        self._config["font"]["size"] = max(6, min(32, font_size))
         self._save_json_config(self.config_path, self._config)
 
     # Background configuration methods

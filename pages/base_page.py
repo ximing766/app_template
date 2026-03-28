@@ -2,8 +2,9 @@
 
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QMessageBox, QSplitter
+from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QSplitter, QLabel
+from PySide6.QtGui import QFont, QColor
 
 class BasePage(QWidget):
     page_activated = Signal(str)  # Emitted when page becomes active
@@ -22,6 +23,27 @@ class BasePage(QWidget):
         
         self.init_ui()
     
+    def _get_current_theme(self):
+        """Get current theme from config manager"""
+        try:
+            # Try to get config manager from parent window
+            window = self.window()
+            if hasattr(window, 'config_manager'):
+                return window.config_manager.get_theme()
+        except:
+            pass
+        
+        # Fall back to PyDracula settings
+        try:
+            from gui.core.json_settings import Settings
+            settings = Settings()
+            if "bright" in settings.items.get("theme_name", ""):
+                return "light"
+        except:
+            pass
+        
+        return "dark"
+    
     def init_ui(self):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -30,6 +52,32 @@ class BasePage(QWidget):
         self.init_content()
 
         self._is_initialized = True
+        
+        # Apply base style with current theme
+        current_theme = self._get_current_theme()
+        self.apply_base_style(current_theme)
+        
+        # Apply global font
+        self.apply_global_font()
+    
+    def apply_global_font(self):
+        """Apply global font to this page and all its children"""
+        font_family = "Courier New"
+        font_size = 10
+        try:
+            window = self.window()
+            if hasattr(window, 'config_manager'):
+                font_family = window.config_manager.get_font_family()
+                font_size = window.config_manager.get_font_size()
+        except:
+            pass
+        
+        font = QFont(font_family, font_size)
+        self.setFont(font)
+        
+        # Apply font to all children
+        for child in self.findChildren(QWidget):
+            child.setFont(font)
     
     def init_content(self):
         """Initialize page content - override in subclasses"""
@@ -42,14 +90,14 @@ class BasePage(QWidget):
         
         # Color definitions based on theme
         colors = {
-            "text": "#4B5469" if is_light else "#f8f8f2",
-            "bg_input": "#ffffff" if is_light else "rgba(36, 42, 56, 0.2)",
+            "text": "#060E22" if is_light else "#F2F8F8",
+            "bg_input": "rgba(231, 250, 247, 0.2)" if is_light else "rgba(36, 42, 56, 0.2)",
             "border_input": "#c3ccdf" if is_light else "#313d4b",
             "border_input_focus": "#568af2" if is_light else "#477faa",
-            "bg_input_focus": "#f8f9fc" if is_light else "rgba(27, 32, 44, 0.99)",
+            "bg_input_focus": "rgba(242, 238, 245, 0.99)" if is_light else "rgba(27, 32, 44, 0.99)",
             "bg_checkbox": "#ffffff" if is_light else "#21252b",
-            "border_checkbox": "#c3ccdf" if is_light else "#888c96",
-            "bg_checkbox_checked": "#568af2" if is_light else "#3e4451",
+            "border_checkbox": "#A896AF" if is_light else "#98a6ca",
+            "bg_checkbox_checked": "#a783cf" if is_light else "#4c6291",
             "border_checkbox_hover": "#8CB8FF" if is_light else "#564463",
             "bg_btn": "#ffffff" if is_light else "#3f444e",
             "bg_btn_hover": "#f5f6f9" if is_light else "#4a505c",
@@ -66,6 +114,7 @@ class BasePage(QWidget):
         btn_border_css = f"border: 1px solid {colors['border_btn']};" if is_light else "border: none;"
         
         base_qss = f"""
+        QLabel {{ color: {colors['text']}; }}
         QComboBox, QLineEdit, QCheckBox {{ color: {colors['text']}; }}
         QLineEdit, QTextEdit {{ 
             background-color: {colors['bg_input']}; 
@@ -87,7 +136,7 @@ class BasePage(QWidget):
         }}
         QCheckBox::indicator:checked {{
             background-color: {colors['bg_checkbox_checked']};
-            border-color: {colors['accent']};
+            border-color: {colors['border_checkbox']};
         }}
         QCheckBox::indicator:hover {{ border-color: {colors['border_checkbox_hover']}; }}
 
@@ -101,7 +150,7 @@ class BasePage(QWidget):
         QPushButton:hover {{ background-color: {colors['bg_btn_hover']}; }}
         QPushButton:pressed {{ background-color: {colors['bg_btn_pressed']}; }}
 
-        QComboBox {{ background-color: {colors['bg_btn']}; border-radius: 5px; border: none; padding-left: 10px; min-height: 30px; }}
+        QComboBox {{ background-color: {colors['bg_btn']}; border-radius: 5px; border: none; padding-left: 10px; }}
         QComboBox::drop-down {{ border: none; }}
         QComboBox QAbstractItemView {{ background-color: {colors['bg_btn']}; color: {colors['text']}; selection-background-color: {colors['accent']}; }}
         
@@ -262,66 +311,76 @@ class BasePage(QWidget):
     
     def __repr__(self):
         return self.__str__()
-    
-    def _get_msg_box_style(self):
-        return """
-        QMessageBox {
-            background-color: #282c34;
-            color: #f8f8f2;
-            font-size: 14px;
-        }
-        QMessageBox QLabel {
-            color: #f8f8f2;
-        }
-        QMessageBox QPushButton {
-            background-color: #3f444e;
-            color: #f8f8f2;
-            border-radius: 5px;
-            border: none;
-            padding: 5px 15px;
-            min-width: 60px;
-        }
-        QMessageBox QPushButton:hover {
-            background-color: #4a505c;
-        }
-        QMessageBox QPushButton:pressed {
-            background-color: #2c313c;
-        }
-        """
 
     # Information display methods
-    def show_info(self, title: str = "Info", content: str = "", duration: int = 1000):
-        """Show info message"""
-        msg = QMessageBox(self)
-        msg.setWindowTitle(title)
-        msg.setText(content)
-        msg.setIcon(QMessageBox.Icon.Information)
-        msg.setStyleSheet(self._get_msg_box_style())
-        msg.exec()
+    def _show_notification(self, title: str, content: str, bg_color: str, text_color: str = "#ffffff",
+                          duration: int = 2000, buttons=None, default_button=None):
+       
+        toast = QWidget(self.window())
+        toast.setObjectName("ToastWidget")
+        toast.setWindowFlags(Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        toast.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        
+        # Use QHBoxLayout for perfect centering
+        layout = QHBoxLayout(toast)
+        layout.setContentsMargins(20, 15, 20, 15)
+        
+        label = QLabel(content)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(label)
+        
+        style = f"""
+            QWidget#ToastWidget {{ 
+                background-color: {bg_color}; 
+                border: 1px solid rgba(0, 0, 0, 0.1); 
+                border-radius: 8px;
+            }}
+            QLabel {{ 
+                color: {text_color}; 
+                font-family: "Segoe UI", "Microsoft YaHei";
+                font-size: 16px;
+                font-weight: 500;
+                background: transparent;
+                border: none;
+            }}
+        """
+        toast.setStyleSheet(style)
+        
+        toast.show()
+        toast.adjustSize()
+        
+        # Position at top-right of the window
+        main_window = self.window()
+        if main_window:
+            rect = main_window.geometry()
+            x = rect.right() - toast.width() - 25
+            y = rect.top() + 50
+            toast.move(x, y)
+        
+        # Use a more reliable closing method
+        def close_and_destroy():
+            if toast:
+                toast.close()
+                toast.deleteLater()
+        
+        QTimer.singleShot(duration, close_and_destroy)
+        return toast
+
+    def show_info(self, title: str = "Info", content: str = "", duration: int = 2000):
+        """Show info message (Soft Blue)"""
+        self._show_notification(title, content, "#E1F0FF", "#005A9E", duration)
     
-    def show_success(self, title: str = "Success", content: str = "", duration: int = 1000):
-        """Show success message"""
-        msg = QMessageBox(self)
-        msg.setWindowTitle(title)
-        msg.setText(content)
-        msg.setIcon(QMessageBox.Icon.Information)
-        msg.setStyleSheet(self._get_msg_box_style())
-        msg.exec()
+    def show_success(self, title: str = "Success", content: str = "", duration: int = 2000):
+        """Show success message (Soft Green)"""
+        self._show_notification(title, content, "#DFF6DD", "#0F5C2E", duration)
     
-    def show_warning(self, title: str = "Warning", content: str = "", duration: int = 2000):
-        """Show warning message"""
-        msg = QMessageBox(self)
-        msg.setWindowTitle(title)
-        msg.setText(content)
-        msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setStyleSheet(self._get_msg_box_style())
-        msg.exec()
+    def show_warning(self, title: str = "Warning", content: str = "", 
+                     buttons=None, default_button=None, duration: int = 3000):
+        """Show warning message (Soft Yellow/Orange)"""
+        is_modal = buttons is not None
+        return self._show_notification(title, content, "#FFF4CE", "#9D5D00",
+                                     duration, is_modal, buttons, default_button)
     
-    def show_error(self, title: str = "Error", content: str = "", duration: int = 2000):
-        """Show error message"""
-        msg = QMessageBox(self)
-        msg.setWindowTitle(title)
-        msg.setText(content)
-        msg.setIcon(QMessageBox.Icon.Critical)
-        msg.setStyleSheet(self._get_msg_box_style())
-        msg.exec()
+    def show_error(self, title: str = "Error", content: str = "", duration: int = 4000):
+        """Show error message (Soft Red)"""
+        self._show_notification(title, content, "#FDE7E9", "#A80000", duration)

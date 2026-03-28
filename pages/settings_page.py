@@ -3,83 +3,68 @@
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
 
 import os
-from PySide6.QtCore import Qt, Signal, QUrl
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QScrollArea, QFrame, QMessageBox, QPushButton
+import json
+import urllib.request
+from PySide6.QtCore import Qt, Signal, QUrl, QThread
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QScrollArea, QFrame, QMessageBox, QPushButton, QComboBox
 from PySide6.QtGui import QDesktopServices
 from .base_page import BasePage
+from main import APP_VERSION, GITHUB_REPO
 
-class SettingCardGroup(QFrame):
-    def __init__(self, title, parent=None):
-        super().__init__(parent)
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(10)
-        
-        self.title_label = QLabel(title)
-        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #f8f8f2;")
-        self.layout.addWidget(self.title_label)
-        
-        self.cards_layout = QVBoxLayout()
-        self.cards_layout.setSpacing(5)
-        self.layout.addLayout(self.cards_layout)
+class UpdateCheckerThread(QThread):
+    result_ready = Signal(dict)
+    error_occurred = Signal(str)
 
-    def addSettingCard(self, card):
-        self.cards_layout.addWidget(card)
+    def __init__(self, repo_path, current_version):
+        super().__init__()
+        self.repo_path = repo_path
+        self.current_version = current_version
 
-class BaseSettingCard(QFrame):
-    def __init__(self, title, description="", parent=None):
-        super().__init__(parent)
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #2c313c;
-                border-radius: 8px;
-            }
-            QLabel { background-color: transparent; }
-        """)
-        self.setMinimumHeight(60)
-        self.main_layout = QHBoxLayout(self)
-        self.main_layout.setContentsMargins(20, 10, 20, 10)
-        
-        text_layout = QVBoxLayout()
-        text_layout.setSpacing(2)
-        
-        self.title_label = QLabel(title)
-        self.title_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #f8f8f2;")
-        text_layout.addWidget(self.title_label)
-        
-        if description:
-            self.desc_label = QLabel(description)
-            self.desc_label.setStyleSheet("font-size: 12px; color: #8a95aa;")
-            text_layout.addWidget(self.desc_label)
-            
-        self.main_layout.addLayout(text_layout)
-        self.main_layout.addStretch()
+    def run(self):
+        try:
+            # Format: ximing766/app_template
+            url = f"https://api.github.com/repos/{self.repo_path}/releases/latest"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+                
+                latest_version = data.get('tag_name', '').lstrip('v')
+                release_notes = data.get('body', 'No release notes provided.')
+                download_url = data.get('html_url', '')
+                
+                # Check if there are assets attached
+                assets = data.get('assets', [])
+                if assets:
+                    download_url = assets[0].get('browser_download_url', download_url)
+
+                self.result_ready.emit({
+                    'latest_version': latest_version,
+                    'release_notes': release_notes,
+                    'download_url': download_url,
+                    'has_update': self._compare_versions(latest_version, self.current_version)
+                })
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+    def _compare_versions(self, v1, v2):
+        """Return True if v1 is newer than v2"""
+        try:
+            v1_parts = [int(x) for x in v1.split('.')]
+            v2_parts = [int(x) for x in v2.split('.')]
+            return v1_parts > v2_parts
+        except:
+            return v1 != v2
 
 class PushSettingCard(QFrame):
     clicked = Signal()
     
     def __init__(self, button_text, title="", description="", parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""
-            QFrame {
-                background-color: transparent;
-                border: none;
-            }
-        """)
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 5, 0, 5)
         
         self.button = QPushButton(button_text)
         self.button.setMinimumHeight(40)
-        self.button.setStyleSheet("""
-            QPushButton {
-                background-color: #3f444e;
-                color: #f8f8f2;
-                border-radius: 5px;
-                font-size: 14px;
-            }
-            QPushButton:hover { background-color: #4a505c; }
-        """)
         self.button.clicked.connect(self.clicked.emit)
         self.main_layout.addWidget(self.button)
         
@@ -90,32 +75,39 @@ class HyperlinkCard(QFrame):
     def __init__(self, url, button_text, title="", description="", parent=None):
         super().__init__(parent)
         self.url = url
-        self.setStyleSheet("""
-            QFrame {
-                background-color: transparent;
-                border: none;
-            }
-        """)
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 5, 0, 5)
         
         self.button = QPushButton(button_text)
         self.button.setMinimumHeight(40)
-        self.button.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                color: #568af2;
-                text-decoration: underline;
-                border: none;
-                font-size: 14px;
-            }
-            QPushButton:hover { color: #6e9bf4; }
-        """)
         self.button.clicked.connect(self.open_url)
         self.main_layout.addWidget(self.button)
         
     def open_url(self):
         QDesktopServices.openUrl(QUrl(self.url))
+
+class ComboSettingCard(QFrame):
+    def __init__(self, items=None, parent=None):
+        super().__init__(parent)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 5, 0, 5)
+        
+        self.combo = QComboBox()
+        self.combo.setMinimumHeight(40)
+        
+        # Center text without making it truly editable by user
+        # We use a readonly lineedit which is the most reliable way to center text in QComboBox
+        self.combo.setEditable(True)
+        self.combo.lineEdit().setReadOnly(True)
+        self.combo.lineEdit().setAlignment(Qt.AlignCenter)
+        
+        # Style to match other buttons and hide the edit cursor
+        self.combo.lineEdit().setStyleSheet("background: transparent; border: none; selection-background-color: transparent;")
+        
+        if items:
+            self.combo.addItems(items)
+            
+        self.main_layout.addWidget(self.combo)
 
 class SettingsPage(BasePage):
     """Settings page with theme management and other general settings"""
@@ -128,7 +120,6 @@ class SettingsPage(BasePage):
     
     def init_content(self):
         """Initialize page content"""
-        self.apply_base_style()
         scroll_widget = QScrollArea(self)
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -143,15 +134,45 @@ class SettingsPage(BasePage):
         content_layout.setContentsMargins(10, 10, 10, 10)  
         
         # Appearance
-        current_theme = "Light"
+        current_theme_display = "Dark"
+        current_theme_name = "dark"
         if self.config_manager:
-            current_theme = self.config_manager.get_theme()
+            current_theme_name = self.config_manager.get_theme()
+            current_theme_display = "Light" if current_theme_name == "light" else "Dark"
+        else:
+            # Fall back to PyDracula settings if no config manager
+            try:
+                from gui.core.json_settings import Settings
+                settings = Settings()
+                if "bright" in settings.items.get("theme_name", ""):
+                    current_theme_display = "Light"
+            except:
+                pass
         
-        self.theme_card = PushSettingCard(current_theme)
+        self.theme_card = PushSettingCard(current_theme_display)
         self.theme_card.clicked.connect(self.on_theme_clicked)
         
         self.background_card = PushSettingCard("BACKGROUND")
         self.background_card.clicked.connect(self.cycle_background_image)
+        
+        # Font selection card with unified style and centered text
+        fonts = [
+            "Consolas",
+            "Courier New",
+            "Lucida Console",
+            "JetBrains Mono",
+            "Cascadia Code"
+        ]
+        self.font_card = ComboSettingCard(fonts)
+        self.font_combo = self.font_card.combo
+        
+        current_font_family = "Courier New"
+        if self.config_manager:
+            current_font_family = self.config_manager.get_font_family()
+        index = self.font_combo.findText(current_font_family)
+        if index >= 0:
+            self.font_combo.setCurrentIndex(index)
+        self.font_combo.currentTextChanged.connect(self.on_font_changed)
         
         # Opacity slider
         opacity_container = QFrame()
@@ -166,28 +187,28 @@ class SettingsPage(BasePage):
             current_opacity = int(self.config_manager.get_background_opacity() * 100)
         self.opacity_slider.setValue(current_opacity)
         self.opacity_value_label = QLabel(f"{current_opacity}%")
-        self.opacity_value_label.setStyleSheet("color: #f8f8f2; font-size: 14px;")
-        self.opacity_value_label.setFixedWidth(40)
         
         opacity_layout.addWidget(self.opacity_slider)
         opacity_layout.addWidget(self.opacity_value_label)
         self.opacity_slider.valueChanged.connect(self.on_opacity_changed)
         
-        # Application
-        self.language_card = PushSettingCard("English")
-        self.language_card.clicked.connect(self.on_language_clicked)
+        # Font size slider
+        font_size_container = QFrame()
+        font_size_container.setStyleSheet("background-color: transparent; border: none;")
+        font_size_layout = QHBoxLayout(font_size_container)
+        font_size_layout.setContentsMargins(0, 10, 0, 10)
         
-        self.reset_card = PushSettingCard("Reset")
-        self.reset_card.button.setStyleSheet("""
-            QPushButton {
-                background-color: #e06c75;
-                color: white;
-                border-radius: 5px;
-                font-size: 14px;
-            }
-            QPushButton:hover { background-color: #f07c85; }
-        """)
-        self.reset_card.clicked.connect(self.reset_settings)
+        self.font_size_slider = QSlider(Qt.Orientation.Horizontal)
+        self.font_size_slider.setRange(6, 32)
+        current_font_size = 10
+        if self.config_manager:
+            current_font_size = self.config_manager.get_font_size()
+        self.font_size_slider.setValue(current_font_size)
+        self.font_size_value_label = QLabel(f"{current_font_size}pt")
+        
+        font_size_layout.addWidget(self.font_size_slider)
+        font_size_layout.addWidget(self.font_size_value_label)
+        self.font_size_slider.valueChanged.connect(self.on_font_size_changed)
         
         # About
         self.help_card = HyperlinkCard("https://ximing766.github.io/my-project-doc/", "Open Help Page")
@@ -200,12 +221,8 @@ class SettingsPage(BasePage):
         content_layout.addWidget(self.theme_card)
         content_layout.addWidget(self.background_card)
         content_layout.addWidget(opacity_container)
-        
-        # Spacer
-        content_layout.addSpacing(20)
-        
-        content_layout.addWidget(self.language_card)
-        content_layout.addWidget(self.reset_card)
+        content_layout.addWidget(self.font_card)
+        content_layout.addWidget(font_size_container)
         
         # Spacer
         content_layout.addSpacing(20)
@@ -266,9 +283,6 @@ class SettingsPage(BasePage):
         next_index = (current_index + 1) % len(available_images)
         next_image = available_images[next_index]
         
-        image_name = os.path.basename(next_image)
-        self.background_card.setContent(f"Current: {image_name}")
-        
         self.config_manager.set_current_background(next_image)
         self.config_manager.set_background_enabled(True)
         self.background_changed.emit(next_image)
@@ -280,40 +294,57 @@ class SettingsPage(BasePage):
         if self.window():
             self.window().update()
     
-    def on_language_clicked(self):
-        current_text = self.language_card.button.text()
-        languages = ["English", "中文"]
-        try:
-            current_index = languages.index(current_text)
-            next_index = (current_index + 1) % len(languages)
-            next_language = languages[next_index]
-        except ValueError:
-            next_language = "English"
-        
-        self.language_card.button.setText(next_language)
-        if self.config_manager:
-            self.config_manager.set_language(next_language.lower())
+    def on_font_changed(self, new_family: str):
+        """Handle font family change from combo box"""
+        if not new_family or not self.config_manager:
+            return
+        self.config_manager.set_font_family(new_family)
+        if self.window() and hasattr(self.window(), "apply_global_font"):
+            self.window().apply_global_font()
     
-    def reset_settings(self):
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Reset Settings")
-        msg.setText("Are you sure you want to reset all settings to default values?\n\nThis action cannot be undone.")
-        msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg.setStyleSheet(self._get_msg_box_style())
-        reply = msg.exec()
-        
-        if reply == QMessageBox.StandardButton.Yes:
-            pass
+    def on_font_size_changed(self, value: int):
+        self.font_size_value_label.setText(f"{value}pt")
+        if self.config_manager:
+            self.config_manager.set_font_size(value)
+            if self.window() and hasattr(self.window(), "apply_global_font"):
+                self.window().apply_global_font()
 
     def show_feedback_dialog(self):
         self.show_info("Feedback", "Thank you for your interest in providing feedback!\n\nPlease visit our GitHub repository.")
     
     def check_update(self):
-        self.show_info("Update Check", "You are using the latest version.\n\nVersion: 1.0.0")
+        self.update_card.button.setText("Checking...")
+        self.update_card.button.setEnabled(False)
+        
+        self.update_thread = UpdateCheckerThread(GITHUB_REPO, APP_VERSION)
+        self.update_thread.result_ready.connect(self._on_update_result)
+        self.update_thread.error_occurred.connect(self._on_update_error)
+        self.update_thread.finished.connect(lambda: self.update_card.button.setEnabled(True))
+        self.update_thread.finished.connect(lambda: self.update_card.button.setText("Check for Updates"))
+        self.update_thread.start()
+
+    def _on_update_result(self, result):
+        if result['has_update']:
+            msg = f"A new version ({result['latest_version']}) is available!\n\nRelease Notes:\n{result['release_notes']}\n\nWould you like to download it?"
+            
+            # Show interactive dialog using the base page's standard method
+            reply = self.show_warning(
+                title="Update Available", 
+                content=msg,
+                buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                default_button=QMessageBox.StandardButton.Yes
+            )
+            
+            if reply == QMessageBox.StandardButton.Yes:
+                QDesktopServices.openUrl(QUrl(result['download_url']))
+        else:
+            self.show_success("Up to Date", f"You are using the latest version (v{result['latest_version']}).")
+
+    def _on_update_error(self, error_msg):
+        self.show_error("Update Check Failed", f"Could not check for updates:\n{error_msg}")
     
     def show_about_dialog(self):
-        self.show_info("About", "Application Template\nVersion 1.0.0\nAuthor: @Qilang²\nCopyright © 2024 | MIT License")
+        self.show_info("About", f"Application Template\nVersion {APP_VERSION}\nAuthor: @Qilang²\nCopyright © 2024 | MIT License")
     
     def __str__(self):
         return f"SettingsPage(id='{self.page_id}')"

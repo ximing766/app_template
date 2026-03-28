@@ -126,6 +126,9 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1000, 700)
         self.resize(1200, 800)
         
+        # Sync the two configuration systems on startup
+        self._sync_configs_on_startup()
+        
         # Clear original pages in stacked widget
         while self.ui.load_pages.pages.count() > 0:
             widget = self.ui.load_pages.pages.widget(0)
@@ -166,6 +169,9 @@ class MainWindow(QMainWindow):
         ]
         self.ui.title_bar.add_menus(title_bar_menus)
         
+        # Apply global font on startup
+        self.apply_global_font()
+        
         # Set initial page
         visible_pages = self.page_manager.get_visible_pages()
         sorted_pages = sorted(visible_pages.items(), key=lambda x: x[1].order)
@@ -195,17 +201,20 @@ class MainWindow(QMainWindow):
         # Determine new theme name
         theme_name = "light" if "bright" in self.settings["theme_name"] else "dark"
         
-        # Update left menu background colors manually since it might be cached
-        self.ui.left_menu.bg.setStyleSheet(f"background: {self.themes['app_color']['dark_one']}; border-radius: {self.ui.left_menu._radius};")
-        
-        # Update toggle button colors
-        if hasattr(self.ui.left_menu, 'toggle_button'):
-            self.ui.left_menu.toggle_button.set_color(
-                self.themes['app_color']['dark_one'],
-                self.themes['app_color']['dark_three'],
-                self.themes['app_color']['dark_four'],
-                self.themes['app_color']['bg_one']
-            )
+        # Update left menu using its update_colors method
+        self.ui.left_menu.update_colors(
+            dark_one = self.themes["app_color"]["dark_one"],
+            dark_three = self.themes["app_color"]["dark_three"],
+            dark_four = self.themes["app_color"]["dark_four"],
+            bg_one = self.themes["app_color"]["bg_one"],
+            icon_color = self.themes["app_color"]["icon_color"],
+            icon_color_hover = self.themes["app_color"]["icon_hover"],
+            icon_color_pressed = self.themes["app_color"]["icon_pressed"],
+            icon_color_active = self.themes["app_color"]["icon_active"],
+            context_color = self.themes["app_color"]["context_color"],
+            text_foreground = self.themes["app_color"]["text_foreground"],
+            text_active = self.themes["app_color"]["text_active"]
+        )
         
         # Completely clear old menus and add them back to force re-render with new theme
         self.ui.left_menu.clear_menus()
@@ -235,20 +244,121 @@ class MainWindow(QMainWindow):
             text_color=self.themes["app_color"]["text_foreground"]
         )
         
+        # Update right column background (settings page container)
+        self.ui.content_area_right_bg_frame.setStyleSheet(f'''
+        #content_area_right_bg_frame {{
+            border-radius: 8px;
+            background-color: {self.themes["app_color"]["bg_two"]};
+        }}
+        ''')
+        
+        # Update left column frame background
+        self.ui.left_column_frame.setStyleSheet(f"background: {self.themes['app_color']['bg_two']}")
+        
+        # Update left menu frame background (navigation bar)
+        self.ui.left_menu_frame.setStyleSheet("")
+        
         # Update title bar background manually since it doesn't have set_stylesheet
         self.ui.title_bar.bg.setStyleSheet(f"background-color: {self.themes['app_color']['bg_two']}; border-radius: 8px;")
         
-        # We need to recreate the title bar custom buttons with new colors
+        # Recreate the three main title bar buttons (minimize, maximize, close)
+        from gui.widgets.py_title_bar.py_title_button import PyTitleButton
+        from gui.core.functions import Functions
+        
+        # Update title bar properties
         self.ui.title_bar._dark_one = self.themes["app_color"]["dark_one"]
         self.ui.title_bar._bg_color = self.themes["app_color"]["bg_two"]
-        self.ui.title_bar._btn_bg_color_hover = self.themes["app_color"]["dark_three"]
-        self.ui.title_bar._btn_bg_color_pressed = self.themes["app_color"]["dark_four"]
+        self.ui.title_bar._div_color = self.themes["app_color"]["dark_four"]
+        self.ui.title_bar._btn_bg_color = self.themes["app_color"]["bg_two"]
+        self.ui.title_bar._btn_bg_color_hover = self.themes["app_color"]["bg_three"]
+        self.ui.title_bar._btn_bg_color_pressed = self.themes["app_color"]["dark_one"]
         self.ui.title_bar._icon_color = self.themes["app_color"]["icon_color"]
         self.ui.title_bar._icon_color_hover = self.themes["app_color"]["icon_hover"]
         self.ui.title_bar._icon_color_pressed = self.themes["app_color"]["icon_pressed"]
         self.ui.title_bar._icon_color_active = self.themes["app_color"]["icon_active"]
         self.ui.title_bar._context_color = self.themes["app_color"]["context_color"]
         self.ui.title_bar._text_foreground = self.themes["app_color"]["text_foreground"]
+        
+        # Remove old buttons from layout
+        if hasattr(self.ui.title_bar, 'minimize_button'):
+            self.ui.title_bar.bg_layout.removeWidget(self.ui.title_bar.minimize_button)
+            self.ui.title_bar.minimize_button.deleteLater()
+        if hasattr(self.ui.title_bar, 'maximize_restore_button'):
+            self.ui.title_bar.bg_layout.removeWidget(self.ui.title_bar.maximize_restore_button)
+            self.ui.title_bar.maximize_restore_button.deleteLater()
+        if hasattr(self.ui.title_bar, 'close_button'):
+            self.ui.title_bar.bg_layout.removeWidget(self.ui.title_bar.close_button)
+            self.ui.title_bar.close_button.deleteLater()
+        
+        # Recreate minimize button
+        self.ui.title_bar.minimize_button = PyTitleButton(
+            self,
+            self.ui.central_widget,
+            tooltip_text="Minimize app",
+            dark_one=self.ui.title_bar._dark_one,
+            bg_color=self.ui.title_bar._btn_bg_color,
+            bg_color_hover=self.ui.title_bar._btn_bg_color_hover,
+            bg_color_pressed=self.ui.title_bar._btn_bg_color_pressed,
+            icon_color=self.ui.title_bar._icon_color,
+            icon_color_hover=self.ui.title_bar._icon_color_hover,
+            icon_color_pressed=self.ui.title_bar._icon_color_pressed,
+            icon_color_active=self.ui.title_bar._icon_color_active,
+            context_color=self.ui.title_bar._context_color,
+            text_foreground=self.ui.title_bar._text_foreground,
+            radius=6,
+            icon_path=Functions.set_svg_icon("icon_minimize.svg")
+        )
+        self.ui.title_bar.minimize_button.released.connect(lambda: self.showMinimized())
+        
+        # Recreate maximize/restore button
+        self.ui.title_bar.maximize_restore_button = PyTitleButton(
+            self,
+            self.ui.central_widget,
+            tooltip_text="Maximize app",
+            dark_one=self.ui.title_bar._dark_one,
+            bg_color=self.ui.title_bar._btn_bg_color,
+            bg_color_hover=self.ui.title_bar._btn_bg_color_hover,
+            bg_color_pressed=self.ui.title_bar._btn_bg_color_pressed,
+            icon_color=self.ui.title_bar._icon_color,
+            icon_color_hover=self.ui.title_bar._icon_color_hover,
+            icon_color_pressed=self.ui.title_bar._icon_color_pressed,
+            icon_color_active=self.ui.title_bar._icon_color_active,
+            context_color=self.ui.title_bar._context_color,
+            text_foreground=self.ui.title_bar._text_foreground,
+            radius=6,
+            icon_path=Functions.set_svg_icon("icon_maximize.svg")
+        )
+        self.ui.title_bar.maximize_restore_button.released.connect(lambda: self.ui.title_bar.maximize_restore())
+        
+        # Recreate close button
+        self.ui.title_bar.close_button = PyTitleButton(
+            self,
+            self.ui.central_widget,
+            tooltip_text="Close app",
+            dark_one=self.ui.title_bar._dark_one,
+            bg_color=self.ui.title_bar._btn_bg_color,
+            bg_color_hover=self.ui.title_bar._btn_bg_color_hover,
+            bg_color_pressed=self.ui.title_bar._context_color,
+            icon_color=self.ui.title_bar._icon_color,
+            icon_color_hover=self.ui.title_bar._icon_color_hover,
+            icon_color_pressed=self.ui.title_bar._icon_color_active,
+            icon_color_active=self.ui.title_bar._icon_color_active,
+            context_color=self.ui.title_bar._context_color,
+            text_foreground=self.ui.title_bar._text_foreground,
+            radius=6,
+            icon_path=Functions.set_svg_icon("icon_close.svg")
+        )
+        self.ui.title_bar.close_button.released.connect(lambda: self.close())
+        
+        # Add buttons back to layout
+        if self.ui.title_bar._is_custom_title_bar:
+            self.ui.title_bar.bg_layout.addWidget(self.ui.title_bar.minimize_button)
+            self.ui.title_bar.bg_layout.addWidget(self.ui.title_bar.maximize_restore_button)
+            self.ui.title_bar.bg_layout.addWidget(self.ui.title_bar.close_button)
+        
+        # Update the button icon based on current window state
+        if self.isMaximized():
+            self.ui.title_bar.maximize_restore_button.set_icon(Functions.set_svg_icon("icon_restore.svg"))
         
         # Re-add custom title bar menus with updated colors
         title_bar_menus = [
@@ -269,6 +379,23 @@ class MainWindow(QMainWindow):
         current_widget = self.ui.load_pages.pages.currentWidget()
         if current_widget and hasattr(current_widget, 'page_id'):
             self.ui.left_menu.select_only_one(f"btn_{current_widget.page_id}")
+        
+        # Update settings page
+        if hasattr(self, 'settings_page'):
+            # Clear any hardcoded styles on the settings page and its children
+            self.settings_page.setStyleSheet("")
+            if hasattr(self.settings_page, 'apply_base_style'):
+                self.settings_page.apply_base_style(theme_name)
+            # Force style refresh on all child widgets
+            for widget in self.settings_page.findChildren(QWidget):
+                widget.setStyleSheet("")
+                widget.style().unpolish(widget)
+                widget.style().polish(widget)
+                widget.update()
+            # Also ensure the settings page itself is refreshed
+            self.settings_page.style().unpolish(self.settings_page)
+            self.settings_page.style().polish(self.settings_page)
+            self.settings_page.update()
         
         # Update base styles for all instantiated pages
         for page_id, page_instance in self.pages.items():
@@ -361,18 +488,24 @@ class MainWindow(QMainWindow):
     def paintEvent(self, event):
         background_config = self.config_manager.get_background_config()
         if background_config.get('enabled', False):
-            if not self.background_cache or self.size() != self.last_window_size:
+            # Only update cache if size changed significantly to reduce stuttering on resize
+            if not self.background_cache or abs(self.width() - self.last_window_size.width()) > 10 or abs(self.height() - self.last_window_size.height()) > 10:
                 self._update_background_cache(background_config)
             
             if self.background_cache:
                 painter = QPainter(self)
+                # Use faster rendering hints
+                painter.setRenderHint(QPainter.Antialiasing, False)
+                painter.setRenderHint(QPainter.SmoothPixmapTransform, False)
                 
                 # Fill with default background color first to avoid transparent holes
                 theme = Themes().items
                 painter.fillRect(self.rect(), QColor(theme['app_color']['bg_one']))
                 
                 painter.setOpacity(background_config.get('opacity', 1.0))
-                painter.drawPixmap(0, 0, self.width(), self.height(), self.background_cache)
+                
+                # Fast draw without scaling during paint (scaling is done in cache)
+                painter.drawPixmap(0, 0, self.background_cache)
                 
                 # Make the app background transparent so we can see the window background
                 self.ui.window.setStyleSheet("#pod_bg_app { background-color: transparent; border: none; }")
@@ -404,6 +537,55 @@ class MainWindow(QMainWindow):
                     Qt.TransformationMode.SmoothTransformation
                 )
                 self.last_window_size = size
+
+    def _sync_configs_on_startup(self):
+        """Synchronize the two configuration systems on startup"""
+        try:
+            from gui.core.json_settings import Settings
+            
+            # Get theme from our config manager
+            our_theme = "dark"
+            if self.config_manager:
+                our_theme = self.config_manager.get_theme()
+            
+            # Get theme from PyDracula settings
+            py_dracula_settings = Settings()
+            py_dracula_theme_name = py_dracula_settings.items.get("theme_name", "default")
+            py_dracula_theme = "light" if "bright" in py_dracula_theme_name else "dark"
+            
+            # Determine which theme to use - prioritize our config manager if different
+            if our_theme != py_dracula_theme:
+                # Update PyDracula settings to match our config
+                themes_map = {
+                    "light": "bright_theme",
+                    "dark": "default"
+                }
+                py_dracula_settings.items["theme_name"] = themes_map.get(our_theme, "default")
+                py_dracula_settings.serialize()
+        except Exception as e:
+            print(f"Error syncing configs on startup: {e}")
+
+    def apply_global_font(self):
+        """Apply global font to all pages and widgets"""
+        if not self.config_manager:
+            return
+        
+        font_family = self.config_manager.get_font_family()
+        font_size = self.config_manager.get_font_size()
+        font = QFont(font_family, font_size)
+        
+        # Apply font to main window
+        self.setFont(font)
+        
+        # Apply font to all pages
+        for page_instance in self.pages.values():
+            if hasattr(page_instance, 'apply_global_font'):
+                page_instance.apply_global_font()
+            else:
+                page_instance.setFont(font)
+                # Apply to children
+                for child in page_instance.findChildren(QWidget):
+                    child.setFont(font)
 
     def closeEvent(self, event):
         self.config_manager.save_config()

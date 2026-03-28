@@ -23,6 +23,7 @@ from qt_core import *
 class PyDiv(QWidget):
     def __init__(self, color):
         super().__init__()
+        self._color = color
 
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0,5,0,5)
@@ -33,3 +34,9 @@ class PyDiv(QWidget):
         self.layout.addWidget(self.frame_line)
         self.setMaximumWidth(20)
         self.setMinimumWidth(20)
+    
+    def set_color(self, color):
+        """Update the divider color"""
+        self._color = color
+        self.frame_line.setStyleSheet(f"background: {color};")
+        self.update()

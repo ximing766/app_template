@@ -240,6 +240,26 @@ class PyLeftMenuButton(QPushButton):
         self._icon_path = icon_path
         self.repaint()
 
+    def update_colors(self, icon_color, icon_color_hover, icon_color_pressed, 
+                      icon_color_active, context_color, text_foreground, text_active):
+        """Update the button colors"""
+        self._icon_color = icon_color
+        self._icon_color_hover = icon_color_hover
+        self._icon_color_pressed = icon_color_pressed
+        self._icon_color_active = icon_color_active
+        self._context_color = context_color
+        self._set_text_foreground = text_foreground
+        self._set_text_active = text_active
+        
+        # Update current state
+        self._set_icon_color = icon_color
+        
+        # Update tooltip if exists
+        if hasattr(self, 'tooltip'):
+            self.tooltip.update_colors(self._dark_one, context_color, text_foreground)
+        
+        self.update()
+
     # DRAW ICON WITH COLORS
     # ///////////////////////////////////////////////////////////////
     def icon_paint(self, qp, image, rect, color):
@@ -386,5 +406,15 @@ class _ToolTip(QLabel):
         self.shadow.setYOffset(0)
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
+    
+    def update_colors(self, dark_one, context_color, text_foreground):
+        """Update tooltip colors"""
+        style = self.style_tooltip.format(
+            _dark_one = dark_one,
+            _context_color = context_color,
+            _text_foreground = text_foreground
+        )
+        self.setStyleSheet(style)
+        self.update()
 
     

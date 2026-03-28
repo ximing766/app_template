@@ -123,6 +123,45 @@ class PyLeftMenu(QWidget):
         self.div_bottom.hide()
         self.bottom_layout.addWidget(self.div_bottom)
 
+    def update_colors(self, dark_one, dark_three, dark_four, bg_one, icon_color, 
+                      icon_color_hover, icon_color_pressed, icon_color_active, 
+                      context_color, text_foreground, text_active):
+        """Update the colors for the left menu and its buttons"""
+        self._dark_one = dark_one
+        self._dark_three = dark_three
+        self._dark_four = dark_four
+        self._bg_one = bg_one
+        self._icon_color = icon_color
+        self._icon_color_hover = icon_color_hover
+        self._icon_color_pressed = icon_color_pressed
+        self._icon_color_active = icon_color_active
+        self._context_color = context_color
+        self._text_foreground = text_foreground
+        self._text_active = text_active
+        
+        # Update background
+        self.bg.setStyleSheet(f"background: {dark_one}; border-radius: {self._radius};")
+        
+        # Update toggle button
+        if hasattr(self, 'toggle_button'):
+            self.toggle_button.set_color(dark_one, dark_three, dark_four, bg_one)
+            self.toggle_button.update_colors(icon_color, icon_color_hover, icon_color_pressed, 
+                                              icon_color_active, context_color, text_foreground, text_active)
+        
+        # Update div colors
+        if hasattr(self, 'div_top'):
+            self.div_top.set_color(dark_four)
+        if hasattr(self, 'div_bottom'):
+            self.div_bottom.set_color(dark_four)
+        
+        # Update all menu buttons
+        for btn in self.findChildren(PyLeftMenuButton):
+            btn.set_color(dark_one, dark_three, dark_four, bg_one)
+            btn.update_colors(icon_color, icon_color_hover, icon_color_pressed, 
+                              icon_color_active, context_color, text_foreground, text_active)
+        
+        self.update()
+
     # ADD BUTTONS TO LEFT MENU
     # Add btns and emit signals
     # ///////////////////////////////////////////////////////////////

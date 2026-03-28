@@ -13,6 +13,7 @@ from core.simple_logger import SimpleLogger
 
 APP_NAME = "APP Template"
 APP_VERSION = "1.0.0"
+GITHUB_REPO = "https://github.com/ximing766/app_template"  # Replace with your actual GitHub repo
 
 def main():
     QApplication.setHighDpiScaleFactorRoundingPolicy(

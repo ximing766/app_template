@@ -70,22 +70,18 @@ class SerialConfigWidget(QFrame):
         self.btn_open.setMinimumHeight(30)
         self.btn_open.setStyleSheet("""
             QPushButton {
-                background-color: #3f444e;
+                background-color: #8b9dc0;
                 color: #f8f8f2;
                 border-radius: 5px;
                 border: none;
                 padding: 5px 15px;
             }
-            QPushButton:hover { background-color: #4a505c; }
+            QPushButton:hover { background-color: #53617c; }
         """)
         self.btn_open.clicked.connect(self.toggle_serial)
         grid.addWidget(self.btn_open, 0, 2)
 
-        self.btn_clear = QPushButton()
-        self.btn_clear.setIcon(QIcon(Functions.set_svg_icon("icon_close.svg")))
-        self.btn_clear.setToolTip("Clear Log")
-        self.btn_clear.setMinimumHeight(30)
-        self.btn_clear.setMaximumWidth(40)
+        self.btn_clear = QPushButton("✖")
         self.btn_clear.clicked.connect(self.clear_log)
         grid.addWidget(self.btn_clear, 0, 3)
         
@@ -98,18 +94,15 @@ class SerialConfigWidget(QFrame):
         grid.addWidget(self.btn_hex_rec, 0, 5)
         
         self.chk_timestamp = QCheckBox("TIME")
-        self.chk_timestamp.setToolTip("Show timestamp")
         self.chk_timestamp.setChecked(False)
         grid.addWidget(self.chk_timestamp, 0, 6)
         
         self.chk_autoscroll = QCheckBox("PIN")
-        self.chk_autoscroll.setToolTip("Auto scroll")
         self.chk_autoscroll.setChecked(True)
         grid.addWidget(self.chk_autoscroll, 0, 7)   
 
         self.btn_open_log = QPushButton()
         self.btn_open_log.setIcon(QIcon(Functions.set_svg_icon("icon_file.svg")))
-        self.btn_open_log.setToolTip("Open Log File")
         self.btn_open_log.setMinimumHeight(30)
         self.btn_open_log.setMaximumWidth(40)
         self.btn_open_log.clicked.connect(self.open_current_log)
@@ -118,7 +111,6 @@ class SerialConfigWidget(QFrame):
         
         self.btn_open_folder = QPushButton()
         self.btn_open_folder.setIcon(QIcon(Functions.set_svg_icon("icon_folder_open.svg")))
-        self.btn_open_folder.setToolTip("Open Log Folder")
         self.btn_open_folder.setMinimumHeight(30)
         self.btn_open_folder.setMaximumWidth(40)
         self.btn_open_folder.clicked.connect(self.open_log_folder)
@@ -127,7 +119,6 @@ class SerialConfigWidget(QFrame):
         send_layout = QHBoxLayout()
         self.send_edit = QLineEdit()
         self.send_edit.setMinimumHeight(30)
-        self.send_edit.setText("rssi:-55 or dist:150")
         self.send_edit.setPlaceholderText("Send command...")
         
         self.btn_send = QPushButton("Send")
@@ -142,10 +133,8 @@ class SerialConfigWidget(QFrame):
         send_layout.addWidget(self.btn_send)
         
         self.log_area = QTextEdit()
-        self.log_area.setPlaceholderText("Received data...")
         self.log_area.setReadOnly(True)
         self.log_area.document().setMaximumBlockCount(self.max_lines + 100)
-        self.log_area.setFont(QFont("Consolas", 11))
 
         layout.addLayout(grid)
         layout.addWidget(self.log_area, 1)
@@ -170,13 +159,13 @@ class SerialConfigWidget(QFrame):
             self.btn_open.setText("OPEN")
             self.btn_open.setStyleSheet("""
                 QPushButton {
-                    background-color: #3f444e;
+                    background-color: #8b9dc0;
                     color: #f8f8f2;
                     border-radius: 5px;
                     border: none;
                     padding: 5px 15px;
                 }
-                QPushButton:hover { background-color: #4a505c; }
+                QPushButton:hover { background-color: #53617c; }
             """)
             self.port_combo.setEnabled(True)
             self.baud_combo.setEnabled(True)
@@ -321,7 +310,6 @@ class SerialDashboardPage(BasePage):
         super().__init__("serial", parent)
 
     def init_content(self):
-        self.apply_base_style()
         root = QVBoxLayout()
         root.setContentsMargins(12, 12, 12, 12)
         root.setSpacing(12)
@@ -405,5 +393,3 @@ class SerialDashboardPage(BasePage):
 
         if self.current_splitter:
             self.container_layout.addWidget(self.current_splitter)
-            # Re-apply base style to ensure splitter style is applied to new instances
-            self.apply_base_style()

@@ -10,6 +10,9 @@
 *.so
 **/LOG/**
 **/output/**
+**/*.dist
+**/*.rar
+**/*.build
 
 # Distribution / packaging
 .Python

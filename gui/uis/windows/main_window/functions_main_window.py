@@ -151,14 +151,46 @@ class MainFunctions():
         settings = Settings()
         themes = Themes()
         
-        # APPLY STYLE
-        self.ui.setup_ui(self)
-        from gui.uis.windows.main_window.setup_main_window import SetupMainWindow
-        SetupMainWindow.setup_gui(self)
-        
-        # RELOAD PAGES
+        theme_colors = themes.items["app_color"]
         theme_name = "light" if "bright" in settings.items["theme_name"] else "dark"
+        
+        # RELOAD PAGES - apply base style
         for page_id in self.pages:
             page = self.pages[page_id]
-            if hasattr(page, "apply_base_style"):
+            if hasattr(page, "update_theme"):
+                page.update_theme(theme_name)
+            elif hasattr(page, "apply_base_style"):
                 page.apply_base_style(theme_name)
+        
+        # UPDATE TITLE BAR
+        if hasattr(self.ui, "title_bar") and hasattr(self.ui.title_bar, "update_colors"):
+            self.ui.title_bar.update_colors(
+                dark_one=theme_colors["dark_one"],
+                bg_color=theme_colors["bg_two"],
+                div_color=theme_colors["dark_four"],
+                btn_bg_color=theme_colors["bg_two"],
+                btn_bg_color_hover=theme_colors["bg_three"],
+                btn_bg_color_pressed=theme_colors["dark_one"],
+                icon_color=theme_colors["icon_color"],
+                icon_color_hover=theme_colors["icon_hover"],
+                icon_color_pressed=theme_colors["icon_pressed"],
+                icon_color_active=theme_colors["icon_active"],
+                context_color=theme_colors["context_color"],
+                text_foreground=theme_colors["text_foreground"]
+            )
+        
+        # UPDATE LEFT MENU
+        if hasattr(self.ui, "left_menu") and hasattr(self.ui.left_menu, "update_colors"):
+            self.ui.left_menu.update_colors(
+                dark_one=theme_colors["dark_one"],
+                dark_three=theme_colors["dark_three"],
+                dark_four=theme_colors["dark_four"],
+                bg_one=theme_colors["bg_one"],
+                icon_color=theme_colors["icon_color"],
+                icon_color_hover=theme_colors["icon_hover"],
+                icon_color_pressed=theme_colors["icon_pressed"],
+                icon_color_active=theme_colors["icon_active"],
+                context_color=theme_colors["context_color"],
+                text_foreground=theme_colors["text_foreground"],
+                text_active=theme_colors["text_active"]
+            )
