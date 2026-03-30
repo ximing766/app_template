@@ -1,6 +1,8 @@
 # ==============================================================================
 # PySide6 App Build and Release Script
-# .\build_lite.ps1 -r -s
+# - 仅编译 ： .\build_lite.ps1
+# - 编译并发布 ： .\build_lite.ps1 -r
+# - 跳过编译仅发布 ： .\build_lite.ps1 -r -s
 # ==============================================================================
 
 param (
@@ -128,14 +130,14 @@ if (Test-Path $ZipFilePath) {
 }
 
 Write-Host "Compressing output to $ZipFileName..." -ForegroundColor Yellow
-Compress-Archive -Path "$SourceDir\*" -DestinationPath $ZipFilePath
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to create zip archive!" -ForegroundColor Red
+try {
+    Compress-Archive -Path "$SourceDir\*" -DestinationPath $ZipFilePath -ErrorAction Stop
+    Write-Host "Zip created successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "Failed to create zip archive! Error: $($_.Exception.Message)" -ForegroundColor Red
     Pop-Location
     Exit 1
 }
-Write-Host "Zip created successfully!" -ForegroundColor Green
 
 # 4. Git Commit (tag will be auto-created by gh release create)
 Write-Host "Checking git status..." -ForegroundColor Cyan
