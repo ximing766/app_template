@@ -1,4 +1,4 @@
-## v1.1.1 (2026-03-28)
+## v1.1.2 (2026-03-28)
 app template
 
 ### 新功能
@@ -8,4 +8,4 @@ app template
 - 1
 
 ### 修复
-- 1 some bug
+- 1 fix bug
