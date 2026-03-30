@@ -22,21 +22,29 @@ if (Test-Path $ENV_PYTHON) {
     Write-Host "Conda not found. Using system Python." -ForegroundColor DarkYellow
 }
 
-# 1. Extract Version from core/constants.py
+# 1. Extract Version and APP_NAME from core/constants.py
 $ConstFile = "core/constants.py"
 $VersionRegex = 'APP_VERSION\s*=\s*"([^"]+)"'
+$AppNameRegex = 'APP_NAME\s*=\s*"([^"]+)"'
 $ConstContent = Get-Content $ConstFile -Raw
+
 if ($ConstContent -match $VersionRegex) {
     $APP_VERSION = $matches[1]
-    Write-Host "Found version in ${ConstFile}: v$APP_VERSION" -ForegroundColor Green
+    Write-Host "Found APP_VERSION in ${ConstFile}: v$APP_VERSION" -ForegroundColor Green
 } else {
     Write-Host "Error: Could not find APP_VERSION in $ConstFile" -ForegroundColor Red
     Exit 1
 }
 
-$MainFile = "main.py"
+if ($ConstContent -match $AppNameRegex) {
+    $APP_NAME = $matches[1]
+    Write-Host "Found APP_NAME in ${ConstFile}: $APP_NAME" -ForegroundColor Green
+} else {
+    Write-Host "Error: Could not find APP_NAME in $ConstFile" -ForegroundColor Red
+    Exit 1
+}
 
-$APP_NAME = "app demo"
+$MainFile = "main.py"
 $OUTPUT_DIR = "output"
 $TAG_NAME = "v$APP_VERSION"
 
@@ -82,8 +90,13 @@ Write-Host "Build completed successfully!" -ForegroundColor Green
 
 # 3. Zip the output for Release
 $ZipFileName = "$APP_NAME-$TAG_NAME-Windows.zip"
-$ZipFilePath = "$OUTPUT_DIR\$ZipFileName"
-$SourceDir = "$OUTPUT_DIR\$APP_NAME.dist"
+$ZipFilePath = Join-Path $OUTPUT_DIR "$ZipFileName"
+$SourceDir = Join-Path $OUTPUT_DIR "main.dist"
+
+if (-not (Test-Path $SourceDir)) {
+    Write-Host "Error: Build output not found at $SourceDir" -ForegroundColor Red
+    Exit 1
+}
 
 if (Test-Path $ZipFilePath) {
     Remove-Item $ZipFilePath -Force
@@ -92,6 +105,12 @@ if (Test-Path $ZipFilePath) {
 Write-Host "Compressing output to $ZipFileName..." -ForegroundColor Yellow
 Compress-Archive -Path "$SourceDir\*" -DestinationPath $ZipFilePath
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Failed to create zip archive!" -ForegroundColor Red
+    Exit 1
+}
+Write-Host "Zip created successfully!" -ForegroundColor Green
+
 # 4. Git Commit (tag will be auto-created by gh release create)
 Write-Host "Checking git status..." -ForegroundColor Cyan
 $GitStatus = git status --porcelain
@@ -99,25 +118,26 @@ if ($GitStatus) {
     Write-Host "Uncommitted changes found. Committing..." -ForegroundColor Yellow
     git add .
     git commit -m "chore: release version $TAG_NAME"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Git commit failed!" -ForegroundColor Red
+        Exit 1
+    }
 } else {
     Write-Host "No changes to commit." -ForegroundColor DarkGray
 }
 
 Write-Host "Pushing commits to origin..." -ForegroundColor Yellow
 git push origin main
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Git push failed!" -ForegroundColor Red
+    Exit 1
+}
 
 # 5. GitHub Release (gh release create auto-creates tag and pushes)
 Write-Host "Checking if gh cli is installed..." -ForegroundColor Cyan
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "Creating GitHub Release $TAG_NAME..." -ForegroundColor Yellow
-    
-    # Check if release exists, if so, delete it first
-    $ReleaseExists = gh release view $TAG_NAME 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Release $TAG_NAME already exists. Deleting..." -ForegroundColor DarkYellow
-        gh release delete $TAG_NAME -y
-    }
-    
+
     # Get Release Notes from a file if it exists, otherwise use a default
     $NotesFile = "RELEASE_NOTES.md"
     $ReleaseNotes = "Automated release of version $TAG_NAME`n`nBuilt on $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
@@ -125,20 +145,22 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
         $ReleaseNotes = Get-Content $NotesFile -Raw
         Write-Host "Found release notes in $NotesFile" -ForegroundColor Cyan
     }
-    
+
     # Create release and upload zip file
     gh release create $TAG_NAME $ZipFilePath `
         --title "Release $TAG_NAME" `
         --notes "$ReleaseNotes"
-        
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Release created successfully and artifact uploaded!" -ForegroundColor Green
     } else {
         Write-Host "Failed to create GitHub release." -ForegroundColor Red
+        Exit 1
     }
 } else {
     Write-Host "GitHub CLI (gh) is not installed. Skipping release creation." -ForegroundColor Red
     Write-Host "To enable auto-releases, install GitHub CLI: https://cli.github.com/" -ForegroundColor Yellow
+    Exit 1
 }
 
 Write-Host "All tasks completed!" -ForegroundColor Green
