@@ -13,6 +13,8 @@
 **/*.dist
 **/*.rar
 **/*.build
+**/*.zip
+**/nuitka_cache/**
 
 # Distribution / packaging
 .Python

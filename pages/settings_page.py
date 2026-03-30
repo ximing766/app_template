@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, Signal, QUrl, QThread
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QScrollArea, QFrame, QMessageBox, QPushButton, QComboBox
 from PySide6.QtGui import QDesktopServices
 from .base_page import BasePage
-from main import APP_VERSION, GITHUB_REPO
+from core.constants import APP_VERSION, GITHUB_REPO
 
 class UpdateCheckerThread(QThread):
     result_ready = Signal(dict)

@@ -3,19 +3,40 @@
 # This script builds the application using Nuitka and releases it to GitHub
 # ==============================================================================
 
-# 1. Extract Version from main.py
-$MainFile = "main.py"
-$VersionRegex = 'APP_VERSION\s*=\s*"([^"]+)"'
-$MainContent = Get-Content $MainFile -Raw
-if ($MainContent -match $VersionRegex) {
-    $APP_VERSION = $matches[1]
-    Write-Host "Found version in $MainFile: v$APP_VERSION" -ForegroundColor Green
+# Conda Environment Activation
+$CONDA_ENV_NAME = "myenv"
+$CONDA_PATH = "D:\ISoftware\miniconda\router"
+$CONDA_BIN = "$CONDA_PATH\Scripts\conda.exe"
+$ENV_PREFIX = "$CONDA_PATH\envs\$CONDA_ENV_NAME"
+$ENV_PYTHON = "$ENV_PREFIX\python.exe"
+
+if (Test-Path $ENV_PYTHON) {
+    Write-Host "Activating conda environment: $CONDA_ENV_NAME" -ForegroundColor Cyan
+    $env:PATH = "$ENV_PREFIX;$ENV_PREFIX\Scripts;$env:PATH"
+    $env:CONDA_PREFIX = $ENV_PREFIX
+    Write-Host "Using Python: $ENV_PYTHON" -ForegroundColor Green
+} elseif (Test-Path $CONDA_BIN) {
+    Write-Host "Activating via conda activate..." -ForegroundColor Cyan
+    & $CONDA_BIN activate $CONDA_ENV_NAME
 } else {
-    Write-Host "Error: Could not find APP_VERSION in $MainFile" -ForegroundColor Red
+    Write-Host "Conda not found. Using system Python." -ForegroundColor DarkYellow
+}
+
+# 1. Extract Version from core/constants.py
+$ConstFile = "core/constants.py"
+$VersionRegex = 'APP_VERSION\s*=\s*"([^"]+)"'
+$ConstContent = Get-Content $ConstFile -Raw
+if ($ConstContent -match $VersionRegex) {
+    $APP_VERSION = $matches[1]
+    Write-Host "Found version in ${ConstFile}: v$APP_VERSION" -ForegroundColor Green
+} else {
+    Write-Host "Error: Could not find APP_VERSION in $ConstFile" -ForegroundColor Red
     Exit 1
 }
 
-$APP_NAME = "PowerMeterBluetoothTest"
+$MainFile = "main.py"
+
+$APP_NAME = "app demo"
 $OUTPUT_DIR = "output"
 $TAG_NAME = "v$APP_VERSION"
 
@@ -71,7 +92,7 @@ if (Test-Path $ZipFilePath) {
 Write-Host "Compressing output to $ZipFileName..." -ForegroundColor Yellow
 Compress-Archive -Path "$SourceDir\*" -DestinationPath $ZipFilePath
 
-# 4. Git Commit and Tag
+# 4. Git Commit (tag will be auto-created by gh release create)
 Write-Host "Checking git status..." -ForegroundColor Cyan
 $GitStatus = git status --porcelain
 if ($GitStatus) {
@@ -82,21 +103,10 @@ if ($GitStatus) {
     Write-Host "No changes to commit." -ForegroundColor DarkGray
 }
 
-Write-Host "Creating tag $TAG_NAME..." -ForegroundColor Yellow
-# Check if tag exists
-$TagExists = git tag -l $TAG_NAME
-if ($TagExists) {
-    Write-Host "Tag $TAG_NAME already exists. Deleting local and remote tag..." -ForegroundColor DarkYellow
-    git tag -d $TAG_NAME
-    git push origin --delete $TAG_NAME
-}
-git tag -a $TAG_NAME -m "Release $TAG_NAME"
-
-Write-Host "Pushing commits and tags to origin..." -ForegroundColor Yellow
+Write-Host "Pushing commits to origin..." -ForegroundColor Yellow
 git push origin main
-git push origin $TAG_NAME
 
-# 5. GitHub Release (requires gh cli)
+# 5. GitHub Release (gh release create auto-creates tag and pushes)
 Write-Host "Checking if gh cli is installed..." -ForegroundColor Cyan
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "Creating GitHub Release $TAG_NAME..." -ForegroundColor Yellow
@@ -108,10 +118,18 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
         gh release delete $TAG_NAME -y
     }
     
+    # Get Release Notes from a file if it exists, otherwise use a default
+    $NotesFile = "RELEASE_NOTES.md"
+    $ReleaseNotes = "Automated release of version $TAG_NAME`n`nBuilt on $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+    if (Test-Path $NotesFile) {
+        $ReleaseNotes = Get-Content $NotesFile -Raw
+        Write-Host "Found release notes in $NotesFile" -ForegroundColor Cyan
+    }
+    
     # Create release and upload zip file
     gh release create $TAG_NAME $ZipFilePath `
         --title "Release $TAG_NAME" `
-        --notes "Automated release of version $TAG_NAME"
+        --notes "$ReleaseNotes"
         
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Release created successfully and artifact uploaded!" -ForegroundColor Green

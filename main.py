@@ -10,10 +10,7 @@ from user_mag import UserManager, LoginController
 from database.database_manager import DatabaseManager
 from pages.serial_dashboard_page import SerialDashboardPage
 from core.simple_logger import SimpleLogger
-
-APP_NAME = "APP Template"
-APP_VERSION = "1.0.0"
-GITHUB_REPO = "https://github.com/ximing766/app_template"  # Replace with your actual GitHub repo
+from core.constants import APP_NAME, APP_VERSION
 
 def main():
     QApplication.setHighDpiScaleFactorRoundingPolicy(
