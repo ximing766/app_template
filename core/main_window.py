@@ -7,7 +7,7 @@ import os
 import json
 from pathlib import Path
 
-from qt_core import *
+from gui.qt_core import *
 from gui.core.json_settings import Settings
 from gui.core.json_themes import Themes
 from gui.uis.windows.main_window.ui_main import UI_MainWindow
@@ -31,6 +31,11 @@ class MainWindow(QMainWindow):
         if logo_path and Path(logo_path).exists():
             self.setWindowIcon(QIcon(str(logo_path)))
         
+        # Initialize managers
+        self.user_manager = user_manager
+        self.config_manager = ConfigManager()
+        self.page_manager = PageManager(parent=self)
+        
         # Load widgets from PyOneDark
         self.ui = UI_MainWindow()
         self.ui.setup_ui(self)
@@ -38,11 +43,6 @@ class MainWindow(QMainWindow):
         # LOAD SETTINGS
         settings = Settings()
         self.settings = settings.items
-
-        # Initialize managers
-        self.user_manager = user_manager
-        self.config_manager = ConfigManager()
-        self.page_manager = PageManager(parent=self)
         
         # Set user manager for page manager if available
         if hasattr(self, 'user_manager') and self.user_manager:
@@ -126,9 +126,6 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1000, 700)
         self.resize(1200, 800)
         
-        # Sync the two configuration systems on startup
-        self._sync_configs_on_startup()
-        
         # Clear original pages in stacked widget
         while self.ui.load_pages.pages.count() > 0:
             widget = self.ui.load_pages.pages.widget(0)
@@ -194,6 +191,8 @@ class MainWindow(QMainWindow):
     def theme_changed(self):
         """Handle theme change signal"""
         # Reload settings and themes first
+        Settings().refresh()
+        Themes().refresh()
         self.settings = Settings().items
         self.ui.themes = Themes().items
         self.themes = self.ui.themes # Ensure MainWindow.themes is updated
@@ -507,6 +506,9 @@ class MainWindow(QMainWindow):
                 # Fast draw without scaling during paint (scaling is done in cache)
                 painter.drawPixmap(0, 0, self.background_cache)
                 
+                # MUST end painter before returning or calling super
+                painter.end()
+                
                 # Make the app background transparent so we can see the window background
                 self.ui.window.setStyleSheet("#pod_bg_app { background-color: transparent; border: none; }")
                 self.ui.central_widget.setStyleSheet("background: transparent;")
@@ -537,33 +539,6 @@ class MainWindow(QMainWindow):
                     Qt.TransformationMode.SmoothTransformation
                 )
                 self.last_window_size = size
-
-    def _sync_configs_on_startup(self):
-        """Synchronize the two configuration systems on startup"""
-        try:
-            from gui.core.json_settings import Settings
-            
-            # Get theme from our config manager
-            our_theme = "dark"
-            if self.config_manager:
-                our_theme = self.config_manager.get_theme()
-            
-            # Get theme from PyDracula settings
-            py_dracula_settings = Settings()
-            py_dracula_theme_name = py_dracula_settings.items.get("theme_name", "default")
-            py_dracula_theme = "light" if "bright" in py_dracula_theme_name else "dark"
-            
-            # Determine which theme to use - prioritize our config manager if different
-            if our_theme != py_dracula_theme:
-                # Update PyDracula settings to match our config
-                themes_map = {
-                    "light": "bright_theme",
-                    "dark": "default"
-                }
-                py_dracula_settings.items["theme_name"] = themes_map.get(our_theme, "default")
-                py_dracula_settings.serialize()
-        except Exception as e:
-            print(f"Error syncing configs on startup: {e}")
 
     def apply_global_font(self):
         """Apply global font to all pages and widgets"""

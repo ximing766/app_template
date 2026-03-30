@@ -22,18 +22,23 @@ import os
 # APP SETTINGS
 # ///////////////////////////////////////////////////////////////
 class Settings(object):
-    # APP PATH
-    # ///////////////////////////////////////////////////////////////
-    json_file = "settings.json"
-    app_path = os.path.abspath(os.getcwd())
-    settings_path = os.path.normpath(os.path.join(app_path, json_file))
-    if not os.path.isfile(settings_path):
-        print(f"WARNING: \"settings.json\" not found! check in the folder {settings_path}")
-    
-    # INIT SETTINGS
-    # ///////////////////////////////////////////////////////////////
-    def __init__(self):
-        super(Settings, self).__init__()
+    _instance = None
+    _items = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Settings, cls).__new__(cls)
+            cls._instance._init_settings()
+        return cls._instance
+
+    def _init_settings(self):
+        # APP PATH
+        # ///////////////////////////////////////////////////////////////
+        self.json_file = "config/config.json"
+        self.app_path = os.path.abspath(os.getcwd())
+        self.settings_path = os.path.normpath(os.path.join(self.app_path, self.json_file))
+        if not os.path.isfile(self.settings_path):
+            print(f"WARNING: \"config/config.json\" not found! check in the folder {self.settings_path}")
 
         # DICTIONARY WITH SETTINGS
         # Just to have objects references
@@ -42,17 +47,45 @@ class Settings(object):
         # DESERIALIZE
         self.deserialize()
 
+    # REFRESH SETTINGS
+    # ///////////////////////////////////////////////////////////////
+    def refresh(self):
+        self.deserialize()
+
     # SERIALIZE JSON
     # ///////////////////////////////////////////////////////////////
     def serialize(self):
+        # READ FULL CONFIG FIRST
+        with open(self.settings_path, "r", encoding='utf-8') as reader:
+            full_config = json.loads(reader.read())
+
+        # UPDATE ONEDARK SECTION
+        full_config['onedark'] = self.items
+        
+        # Sync back to main theme setting
+        theme_name = self.items.get('theme_name', 'default')
+        if theme_name == 'bright_theme':
+            if 'theme' not in full_config: full_config['theme'] = {}
+            full_config['theme']['current_theme'] = 'light'
+        else:
+            if 'theme' not in full_config: full_config['theme'] = {}
+            full_config['theme']['current_theme'] = 'dark'
+
         # WRITE JSON FILE
         with open(self.settings_path, "w", encoding='utf-8') as write:
-            json.dump(self.items, write, indent=4)
+            json.dump(full_config, write, indent=4)
 
     # DESERIALIZE JSON
     # ///////////////////////////////////////////////////////////////
     def deserialize(self):
         # READ JSON FILE
         with open(self.settings_path, "r", encoding='utf-8') as reader:
-            settings = json.loads(reader.read())
-            self.items = settings
+            full_config = json.loads(reader.read())
+            self.items = full_config.get('onedark', {})
+            
+            # Sync with main theme setting
+            main_theme = full_config.get('theme', {}).get('current_theme', 'dark')
+            if main_theme == 'light':
+                self.items['theme_name'] = 'bright_theme'
+            else:
+                self.items['theme_name'] = 'default'

@@ -23,7 +23,7 @@ import os
 
 # IMPORT QT CORE
 # ///////////////////////////////////////////////////////////////
-from qt_core import *
+from gui.qt_core import *
 
 # IMPORT SETTINGS
 # ///////////////////////////////////////////////////////////////
@@ -80,7 +80,8 @@ class SetupMainWindow:
     def setup_gui(self):
         # APP TITLE
         # ///////////////////////////////////////////////////////////////
-        self.setWindowTitle(self.settings["app_name"])
+        from core.constants import APP_NAME
+        self.setWindowTitle(APP_NAME)
         
         # REMOVE TITLE BAR
         # ///////////////////////////////////////////////////////////////
@@ -122,7 +123,7 @@ class SetupMainWindow:
         if self.settings["custom_title_bar"]:
             self.ui.title_bar.set_title(self.settings["app_name"])
         else:
-            self.ui.title_bar.set_title("Welcome to PyOneDark")
+            self.ui.title_bar.set_title(self.settings["app_name"])
 
         # LEFT COLUMN SET SIGNALS
         # ///////////////////////////////////////////////////////////////

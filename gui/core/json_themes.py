@@ -26,30 +26,23 @@ from gui.core.json_settings import Settings
 # APP THEMES
 # ///////////////////////////////////////////////////////////////
 class Themes(object):
-    # LOAD SETTINGS
-    # ///////////////////////////////////////////////////////////////
-    setup_settings = Settings()
-    _settings = setup_settings.items
+    _instance = None
+    _items = {}
 
-    # APP PATH
-    # ///////////////////////////////////////////////////////////////
-    json_file = f"gui/themes/{_settings['theme_name']}.json"
-    app_path = os.path.abspath(os.getcwd())
-    settings_path = os.path.normpath(os.path.join(app_path, json_file))
-    if not os.path.isfile(settings_path):
-        print(f"WARNING: \"gui/themes/{_settings['theme_name']}.json\" not found! check in the folder {settings_path}")
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Themes, cls).__new__(cls)
+            cls._instance._init_themes()
+        return cls._instance
 
-    # INIT SETTINGS
-    # ///////////////////////////////////////////////////////////////
-    def __init__(self):
-        super(Themes, self).__init__()
-        
-        # Load settings each time to get the current theme name
+    def _init_themes(self):
+        # Load settings to get the current theme name
         setup_settings = Settings()
         _settings = setup_settings.items
-        
+
         # APP PATH
-        json_file = f"gui/themes/{_settings['theme_name']}.json"
+        theme_name = _settings.get('theme_name', 'default')
+        json_file = f"config/themes/{theme_name}.json"
         app_path = os.path.abspath(os.getcwd())
         self.settings_path = os.path.normpath(os.path.join(app_path, json_file))
 
@@ -58,6 +51,11 @@ class Themes(object):
 
         # DESERIALIZE
         self.deserialize()
+
+    # REFRESH THEME
+    # ///////////////////////////////////////////////////////////////
+    def refresh(self):
+        self._init_themes()
 
     # SERIALIZE JSON
     # ///////////////////////////////////////////////////////////////

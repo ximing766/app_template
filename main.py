@@ -12,6 +12,9 @@ from pages.serial_dashboard_page import SerialDashboardPage
 from core.simple_logger import SimpleLogger
 from core.constants import APP_NAME, APP_VERSION
 
+import warnings
+warnings.filterwarnings("ignore")
+
 def main():
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)

@@ -9,51 +9,10 @@ from PySide6.QtCore import Qt, Signal, QUrl, QThread
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QScrollArea, QFrame, QMessageBox, QPushButton, QComboBox
 from PySide6.QtGui import QDesktopServices
 from .base_page import BasePage
+from core.pyupdate import UpdateManager
 from core.constants import APP_VERSION, GITHUB_REPO
 
-class UpdateCheckerThread(QThread):
-    result_ready = Signal(dict)
-    error_occurred = Signal(str)
-
-    def __init__(self, repo_path, current_version):
-        super().__init__()
-        self.repo_path = repo_path
-        self.current_version = current_version
-
-    def run(self):
-        try:
-            # Format: ximing766/app_template
-            url = f"https://api.github.com/repos/{self.repo_path}/releases/latest"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=10) as response:
-                data = json.loads(response.read().decode())
-                
-                latest_version = data.get('tag_name', '').lstrip('v')
-                release_notes = data.get('body', 'No release notes provided.')
-                download_url = data.get('html_url', '')
-                
-                # Check if there are assets attached
-                assets = data.get('assets', [])
-                if assets:
-                    download_url = assets[0].get('browser_download_url', download_url)
-
-                self.result_ready.emit({
-                    'latest_version': latest_version,
-                    'release_notes': release_notes,
-                    'download_url': download_url,
-                    'has_update': self._compare_versions(latest_version, self.current_version)
-                })
-        except Exception as e:
-            self.error_occurred.emit(str(e))
-
-    def _compare_versions(self, v1, v2):
-        """Return True if v1 is newer than v2"""
-        try:
-            v1_parts = [int(x) for x in v1.split('.')]
-            v2_parts = [int(x) for x in v2.split('.')]
-            return v1_parts > v2_parts
-        except:
-            return v1 != v2
+# Removed UpdateCheckerThread since we use UpdateManager now
 
 class PushSettingCard(QFrame):
     clicked = Signal()
@@ -309,25 +268,27 @@ class SettingsPage(BasePage):
             if self.window() and hasattr(self.window(), "apply_global_font"):
                 self.window().apply_global_font()
 
-    def show_feedback_dialog(self):
-        self.show_info("Feedback", "Thank you for your interest in providing feedback!\n\nPlease visit our GitHub repository.")
-    
     def check_update(self):
         self.update_card.button.setText("Checking...")
         self.update_card.button.setEnabled(False)
         
-        self.update_thread = UpdateCheckerThread(GITHUB_REPO, APP_VERSION)
-        self.update_thread.result_ready.connect(self._on_update_result)
-        self.update_thread.error_occurred.connect(self._on_update_error)
-        self.update_thread.finished.connect(lambda: self.update_card.button.setEnabled(True))
-        self.update_thread.finished.connect(lambda: self.update_card.button.setText("Check for Updates"))
-        self.update_thread.start()
+        self.update_manager = UpdateManager(GITHUB_REPO, APP_VERSION)
+        self.update_manager.set_mode("check")
+        self.update_manager.update_finished.connect(self._on_check_finished)
+        self.update_manager.start()
 
-    def _on_update_result(self, result):
-        if result['has_update']:
-            msg = f"A new version ({result['latest_version']}) is available!\n\nRelease Notes:\n{result['release_notes']}\n\nWould you like to download it?"
+    def _on_check_finished(self, success, message):
+        self.update_card.button.setEnabled(True)
+        self.update_card.button.setText("Check for Updates")
+        
+        if not success:
+            self.show_error("Update Check Failed", f"Could not check for updates:\n{message}")
+            return
             
-            # Show interactive dialog using the base page's standard method
+        result = self.update_manager.update_data
+        if result.get('has_update'):
+            msg = f"A new version ({result.get('latest_version')}) is available!\n\nRelease Notes:\n{result.get('release_notes')}\n\nWould you like to download and install it?"
+            
             reply = self.show_warning(
                 title="Update Available", 
                 content=msg,
@@ -336,12 +297,49 @@ class SettingsPage(BasePage):
             )
             
             if reply == QMessageBox.StandardButton.Yes:
-                QDesktopServices.openUrl(QUrl(result['download_url']))
+                self.start_download()
         else:
-            self.show_success("Up to Date", f"You are using the latest version (v{result['latest_version']}).")
+            self.show_success("Up to Date", f"You are using the latest version (v{result.get('latest_version')}).")
 
-    def _on_update_error(self, error_msg):
-        self.show_error("Update Check Failed", f"Could not check for updates:\n{error_msg}")
+    def start_download(self):
+        self.update_card.button.setText("Downloading... 0%")
+        self.update_card.button.setEnabled(False)
+        
+        self.update_manager.set_mode("download")
+        # Disconnect previous finished signal to avoid double calls
+        try: self.update_manager.update_finished.disconnect()
+        except: pass
+        
+        self.update_manager.update_finished.connect(self._on_download_finished)
+        self.update_manager.progress_changed.connect(self._on_download_progress)
+        self.update_manager.status_changed.connect(lambda s: self.update_card.button.setText(s))
+        self.update_manager.start()
+
+    def _on_download_progress(self, progress):
+        self.update_card.button.setText(f"Downloading... {progress}%")
+
+    def _on_download_finished(self, success, extracted_path):
+        self.update_card.button.setEnabled(True)
+        self.update_card.button.setText("Check for Updates")
+        
+        if not success:
+            self.show_error("Download Failed", f"Could not download update:\n{extracted_path}")
+            return
+            
+        reply = self.show_success(
+            title="Download Complete",
+            content="Update downloaded successfully. Restart the application to apply the update now?",
+            buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            default_button=QMessageBox.StandardButton.Yes
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.update_manager.set_mode("apply", update_data=extracted_path)
+            self.update_manager.start()
+
+
+    def show_feedback_dialog(self):
+        self.show_info("Feedback", "Thank you for your interest in providing feedback!\n\nPlease visit our GitHub repository.")
     
     def show_about_dialog(self):
         self.show_info("About", f"Application Template\nVersion {APP_VERSION}\nAuthor: @Qilang²\nCopyright © 2024 | MIT License")

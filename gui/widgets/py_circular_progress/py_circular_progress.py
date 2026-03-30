@@ -16,7 +16,7 @@
 
 # IMPORT QT CORE
 # ///////////////////////////////////////////////////////////////
-from qt_core import *
+from gui.qt_core import *
 
 class PyCircularProgress(QWidget):
     def __init__(

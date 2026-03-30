@@ -1,7 +1,5 @@
 {
     "app": {
-        "name": "Generic App",
-        "version": "1.0.0",
         "window": {
             "width": 1200,
             "height": 800,
@@ -24,18 +22,13 @@
         "opacity": 0.23,
         "current_image": "assets/PIC/L_2.jpg",
         "available_images": [
-            "assets/PIC/D_1.jpg",
-            "assets/PIC/D_3.png",
             "assets/PIC/D_4.jpg",
-            "assets/PIC/D_5.jpg",
             "assets/PIC/D_6.png",
             "assets/PIC/L_1.png",
             "assets/PIC/L_2.jpg",
-            "assets/PIC/L_3.jpg",
-            "assets/PIC/L_4.jpg",
-            "assets/PIC/L_5.jpg"
+            "assets/PIC/L_4.jpg"
         ],
-        "current_index": 6
+        "current_index": 3
     },
     "theme": {
         "current_theme": "light",
@@ -57,5 +50,38 @@
     "font": {
         "family": "Consolas",
         "size": 11
+    },
+    "onedark": {
+        "copyright": "By: Qilang²",
+        "year": 2026,
+        "theme_name": "default",
+        "custom_title_bar": true,
+        "startup_size": [
+            1400,
+            720
+        ],
+        "minimum_size": [
+            960,
+            540
+        ],
+        "lef_menu_size": {
+            "minimum": 50,
+            "maximum": 240
+        },
+        "left_menu_content_margins": 3,
+        "left_column_size": {
+            "minimum": 0,
+            "maximum": 240
+        },
+        "right_column_size": {
+            "minimum": 0,
+            "maximum": 240
+        },
+        "time_animation": 500,
+        "font": {
+            "family": "Segoe UI",
+            "title_size": 10,
+            "text_size": 9
+        }
     }
 }
