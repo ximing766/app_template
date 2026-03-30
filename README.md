@@ -2,7 +2,7 @@
 
 一个基于 PySide6 开发的现代、简洁的模板。
 
-![App Demo](assets/images/demo.gif) test
+![App Demo](assets/images/demo.gif)
 
 ## 核心特性
 - **U I 设计**：基于 PyOneDark 框架，提供流畅且美观的交互体验。
