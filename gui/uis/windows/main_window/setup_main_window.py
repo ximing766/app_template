@@ -28,6 +28,7 @@ from gui.qt_core import *
 # IMPORT SETTINGS
 # ///////////////////////////////////////////////////////////////
 from gui.core.json_settings import Settings
+from core.constants import APP_NAME, APP_VERSION
 
 # IMPORT THEME COLORS
 # ///////////////////////////////////////////////////////////////
@@ -80,7 +81,6 @@ class SetupMainWindow:
     def setup_gui(self):
         # APP TITLE
         # ///////////////////////////////////////////////////////////////
-        from core.constants import APP_NAME
         self.setWindowTitle(APP_NAME)
         
         # REMOVE TITLE BAR
@@ -121,9 +121,9 @@ class SetupMainWindow:
 
         # ADD Title
         if self.settings["custom_title_bar"]:
-            self.ui.title_bar.set_title(self.settings["app_name"])
+            self.ui.title_bar.set_title(APP_NAME)
         else:
-            self.ui.title_bar.set_title(self.settings["app_name"])
+            self.ui.title_bar.set_title(APP_NAME)
 
         # LEFT COLUMN SET SIGNALS
         # ///////////////////////////////////////////////////////////////

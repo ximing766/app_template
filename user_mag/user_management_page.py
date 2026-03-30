@@ -229,7 +229,7 @@ class UserDialog(QDialog):
 
             is_active = self.user_data.get('is_active', True)
 
-            status_text = "æ¿æ´? if is_active else "ç¦ç¨"
+            status_text = "激活" if is_active else "禁用"
 
             status_index = self.status_combo.findText(status_text)
 

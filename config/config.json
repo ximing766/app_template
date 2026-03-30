@@ -1,5 +1,7 @@
 {
     "app": {
+        "name": "Generic App",
+        "version": "1.0.0",
         "window": {
             "width": 1200,
             "height": 800,
@@ -49,7 +51,7 @@
     },
     "font": {
         "family": "Consolas",
-        "size": 11
+        "size": 12
     },
     "onedark": {
         "copyright": "By: Qilang²",

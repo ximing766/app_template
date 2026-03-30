@@ -1,7 +1,19 @@
 # ==============================================================================
 # PySide6 App Build and Release Script
-# This script builds the application using Nuitka and releases it to GitHub
+# .\build_lite.ps1 -r -s
 # ==============================================================================
+
+param (
+    [Alias("r")]
+    [switch]$release,    # If set, execute zip, git commit, and github release
+    
+    [Alias("s")]
+    [switch]$skipBuild   # If set, skip Nuitka build and start from step 3 (zip/release)
+)
+
+# Set working directory to script location
+$PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+Push-Location $PSScriptRoot
 
 # Conda Environment Activation
 $CONDA_ENV_NAME = "myenv"
@@ -33,6 +45,7 @@ if ($ConstContent -match $VersionRegex) {
     Write-Host "Found APP_VERSION in ${ConstFile}: v$APP_VERSION" -ForegroundColor Green
 } else {
     Write-Host "Error: Could not find APP_VERSION in $ConstFile" -ForegroundColor Red
+    Pop-Location
     Exit 1
 }
 
@@ -41,6 +54,7 @@ if ($ConstContent -match $AppNameRegex) {
     Write-Host "Found APP_NAME in ${ConstFile}: $APP_NAME" -ForegroundColor Green
 } else {
     Write-Host "Error: Could not find APP_NAME in $ConstFile" -ForegroundColor Red
+    Pop-Location
     Exit 1
 }
 
@@ -59,34 +73,44 @@ if (-not (Test-Path $OUTPUT_DIR)) {
 }
 
 # 2. Run Nuitka Build (Optimized for size)
-# Added --lto=yes for Link Time Optimization (smaller size)
-# Kept --nofollow-import-to to exclude heavy data science packages
-Write-Host "Building executable with Nuitka..." -ForegroundColor Yellow
-python -m nuitka `
-    --standalone `
-    --windows-console-mode=disable `
-    --enable-plugin=pyqt6 `
-    --include-qt-plugins=sensible,styles `
-    --windows-icon-from-ico=assets/logo.ico `
-    --include-data-dir=assets=assets `
-    --include-data-dir=config=config `
-    --include-data-dir=database=database `
-    --output-dir=$OUTPUT_DIR `
-    --output-filename=$APP_NAME `
-    --assume-yes-for-downloads `
-    --jobs=8 `
-    --python-flag=-OO `
-    --lto=yes `
-    --nofollow-import-to=numpy,scipy,pandas,matplotlib,IPython,PIL,tkinter `
-    --remove-output `
-    $MainFile
+if ($skipBuild) {
+    Write-Host "Skipping Nuitka build step as requested." -ForegroundColor Cyan
+} else {
+    Write-Host "Building executable with Nuitka..." -ForegroundColor Yellow
+    python -m nuitka `
+        --standalone `
+        --windows-console-mode=attach `
+        --enable-plugin=pyside6 `
+        --include-qt-plugins=sensible,styles `
+        --windows-icon-from-ico=assets/logo.ico `
+        --include-data-dir=assets=assets `
+        --include-data-dir=config=config `
+        --include-data-dir=database=database `
+        --output-dir=$OUTPUT_DIR `
+        --output-filename=$APP_NAME `
+        --assume-yes-for-downloads `
+        --jobs=8 `
+        --python-flag=-OO `
+        --lto=yes `
+        --nofollow-import-to=numpy,scipy,pandas,matplotlib,IPython,PIL,tkinter `
+        --remove-output `
+        $MainFile
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Build failed! Exiting." -ForegroundColor Red
-    Exit 1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Build failed! Exiting." -ForegroundColor Red
+        Pop-Location
+        Exit 1
+    }
+
+    Write-Host "Build completed successfully!" -ForegroundColor Green
 }
 
-Write-Host "Build completed successfully!" -ForegroundColor Green
+if (-not $release) {
+    Write-Host "No --release flag detected. Skipping zip, git commit, and GitHub release steps." -ForegroundColor Cyan
+    Write-Host "All tasks completed!" -ForegroundColor Green
+    Pop-Location
+    Exit 0
+}
 
 # 3. Zip the output for Release
 $ZipFileName = "$APP_NAME-$TAG_NAME-Windows.zip"
@@ -95,6 +119,7 @@ $SourceDir = Join-Path $OUTPUT_DIR "main.dist"
 
 if (-not (Test-Path $SourceDir)) {
     Write-Host "Error: Build output not found at $SourceDir" -ForegroundColor Red
+    Pop-Location
     Exit 1
 }
 
@@ -107,6 +132,7 @@ Compress-Archive -Path "$SourceDir\*" -DestinationPath $ZipFilePath
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to create zip archive!" -ForegroundColor Red
+    Pop-Location
     Exit 1
 }
 Write-Host "Zip created successfully!" -ForegroundColor Green
@@ -120,6 +146,7 @@ if ($GitStatus) {
     git commit -m "chore: release version $TAG_NAME"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git commit failed!" -ForegroundColor Red
+        Pop-Location
         Exit 1
     }
 } else {
@@ -130,6 +157,7 @@ Write-Host "Pushing commits to origin..." -ForegroundColor Yellow
 git push origin main
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Git push failed!" -ForegroundColor Red
+    Pop-Location
     Exit 1
 }
 
@@ -138,7 +166,6 @@ Write-Host "Checking if gh cli is installed..." -ForegroundColor Cyan
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "Creating GitHub Release $TAG_NAME..." -ForegroundColor Yellow
 
-    # Get Release Notes from a file if it exists, otherwise use a default
     $NotesFile = "RELEASE_NOTES.md"
     $ReleaseNotes = "Automated release of version $TAG_NAME`n`nBuilt on $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
     if (Test-Path $NotesFile) {
@@ -146,7 +173,6 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
         Write-Host "Found release notes in $NotesFile" -ForegroundColor Cyan
     }
 
-    # Create release and upload zip file
     gh release create $TAG_NAME $ZipFilePath `
         --title "Release $TAG_NAME" `
         --notes "$ReleaseNotes"
@@ -155,12 +181,14 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
         Write-Host "Release created successfully and artifact uploaded!" -ForegroundColor Green
     } else {
         Write-Host "Failed to create GitHub release." -ForegroundColor Red
+        Pop-Location
         Exit 1
     }
 } else {
     Write-Host "GitHub CLI (gh) is not installed. Skipping release creation." -ForegroundColor Red
-    Write-Host "To enable auto-releases, install GitHub CLI: https://cli.github.com/" -ForegroundColor Yellow
+    Pop-Location
     Exit 1
 }
 
 Write-Host "All tasks completed!" -ForegroundColor Green
+Pop-Location

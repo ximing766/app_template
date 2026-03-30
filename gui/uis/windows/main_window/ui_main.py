@@ -25,6 +25,7 @@ from gui.qt_core import *
 # IMPORT SETTINGS
 # ///////////////////////////////////////////////////////////////
 from gui.core.json_settings import Settings
+from core.constants import APP_NAME, APP_VERSION
 
 # IMPORT THEME COLORS
 # ///////////////////////////////////////////////////////////////
@@ -274,11 +275,11 @@ class UI_MainWindow(object):
         self.credits_layout = QVBoxLayout(self.credits_frame)
         self.credits_layout.setContentsMargins(0,0,0,0)
 
-        # ADD CUSTOM WIDGET CREDITS
+        # Credits bar
         self.credits = PyCredits(
             bg_two = self.themes["app_color"]["bg_two"],
             copyright = self.settings["copyright"],
-            version = self.settings["version"],
+            version = APP_VERSION,
             font_family = self.settings["font"]["family"],
             text_size = self.settings["font"]["text_size"],
             text_description_color = self.themes["app_color"]["text_description"]
