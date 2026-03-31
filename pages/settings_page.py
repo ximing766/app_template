@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
 import os
 import json
@@ -47,12 +47,27 @@ class ComboSettingCard(QFrame):
         super().__init__(parent)
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 5, 0, 5)
+
         self.combo = QComboBox()
         self.combo.setMinimumHeight(40)
         self.combo.setEditable(True)
         self.combo.lineEdit().setReadOnly(True)
         self.combo.lineEdit().setAlignment(Qt.AlignCenter)
         self.combo.lineEdit().setStyleSheet("background: transparent; border: none; selection-background-color: transparent;")
+        # Override the base page style to show the drop-down arrow
+        self.combo.setStyleSheet("""
+
+            QComboBox::down-arrow {
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid currentColor;  /* 仅上边框着色，形成向下箭头 */
+                margin-right: 8px;  /* 微调箭头和右边缘的距离 */
+            }
+        """)
+
+        
         if items:
             self.combo.addItems(items)
         self.main_layout.addWidget(self.combo)
@@ -72,13 +87,15 @@ class SettingsPage(BasePage):
         scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll_widget.setStyleSheet("QScrollArea { border: none; background-color: transparent; } QWidget#scroll_content { background-color: transparent; }")
+        
         scroll_content = QWidget()
         scroll_content.setObjectName("scroll_content")
         content_layout = QVBoxLayout(scroll_content)
         content_layout.setSpacing(10)
-        content_layout.setContentsMargins(10, 10, 10, 10)
+        content_layout.setContentsMargins(0, 10, 0, 10)
         current_theme_display = "Dark"
         current_theme_name = "dark"
+
         if self.config_manager:
             current_theme_name = self.config_manager.get_theme()
             current_theme_display = "Light" if current_theme_name == "light" else "Dark"
@@ -90,10 +107,12 @@ class SettingsPage(BasePage):
                     current_theme_display = "Light"
             except:
                 pass
+
         self.theme_card = PushSettingCard(current_theme_display)
         self.theme_card.clicked.connect(self.on_theme_clicked)
         self.background_card = PushSettingCard("BACKGROUND")
         self.background_card.clicked.connect(self.cycle_background_image)
+
         fonts = ["Consolas", "Courier New", "Lucida Console", "JetBrains Mono", "Cascadia Code"]
         self.font_card = ComboSettingCard(fonts)
         self.font_combo = self.font_card.combo
@@ -104,53 +123,63 @@ class SettingsPage(BasePage):
         if index >= 0:
             self.font_combo.setCurrentIndex(index)
         self.font_combo.currentTextChanged.connect(self.on_font_changed)
+
         opacity_container = QFrame()
         opacity_container.setStyleSheet("background-color: transparent; border: none;")
         opacity_layout = QHBoxLayout(opacity_container)
         opacity_layout.setContentsMargins(0, 10, 0, 10)
+
         self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
         self.opacity_slider.setRange(0, 100)
         current_opacity = 100
         if self.config_manager:
             current_opacity = int(self.config_manager.get_background_opacity() * 100)
         self.opacity_slider.setValue(current_opacity)
+
         self.opacity_value_label = QLabel(f"{current_opacity}%")
         opacity_layout.addWidget(self.opacity_slider)
         opacity_layout.addWidget(self.opacity_value_label)
         self.opacity_slider.valueChanged.connect(self.on_opacity_changed)
+
         font_size_container = QFrame()
         font_size_container.setStyleSheet("background-color: transparent; border: none;")
         font_size_layout = QHBoxLayout(font_size_container)
         font_size_layout.setContentsMargins(0, 10, 0, 10)
+
         self.font_size_slider = QSlider(Qt.Orientation.Horizontal)
         self.font_size_slider.setRange(6, 32)
         current_font_size = 10
         if self.config_manager:
             current_font_size = self.config_manager.get_font_size()
         self.font_size_slider.setValue(current_font_size)
+
         self.font_size_value_label = QLabel(f"{current_font_size}pt")
         font_size_layout.addWidget(self.font_size_slider)
         font_size_layout.addWidget(self.font_size_value_label)
         self.font_size_slider.valueChanged.connect(self.on_font_size_changed)
+
         self.help_card = HyperlinkCard("https://ximing766.github.io/my-project-doc/", "Open Help Page")
         self.feedback_card = PushSettingCard("Provide Feedback")
         self.feedback_card.clicked.connect(self.show_feedback_dialog)
         self.update_card = PushSettingCard("Check for Updates")
         self.update_card.clicked.connect(self.check_update)
+
         content_layout.addWidget(self.theme_card)
         content_layout.addWidget(self.background_card)
         content_layout.addWidget(opacity_container)
         content_layout.addWidget(self.font_card)
         content_layout.addWidget(font_size_container)
+
         content_layout.addSpacing(20)
         content_layout.addWidget(self.help_card)
         content_layout.addWidget(self.feedback_card)
         content_layout.addWidget(self.update_card)
+
         content_layout.addStretch()
+
         scroll_content.setLayout(content_layout)
         scroll_widget.setWidget(scroll_content)
         self.layout.addWidget(scroll_widget)
-        self.setMaximumWidth(240)
 
     def on_theme_clicked(self):
         current_text = self.theme_card.button.text()

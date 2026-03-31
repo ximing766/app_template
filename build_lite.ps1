@@ -173,14 +173,14 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 ## $TAG_NAME ($(Get-Date -Format 'yyyy-MM-dd'))
 app template
 
-### 新功能
+### New Feature
 - 1 
 
-### 优化
-- 1
+### Optimize
+- 1 optimize code structure
 
-### 修复
-- 1 fix bug
+### Fix
+- 1 fix some bug
 "@
 
     gh release create $TAG_NAME $ZipFilePath `

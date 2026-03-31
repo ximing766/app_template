@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # Copyright (C) 2025  Qilang虏 <ximing766@gmail.com>
 #
@@ -182,6 +182,7 @@ class ConfigManager:
             self._config["font"] = {}
         self._config["font"]["family"] = font_family
         self._save_json_config(self.config_path, self._config)
+        return True
 
     def get_font_size(self) -> int:
         """Get current font size"""

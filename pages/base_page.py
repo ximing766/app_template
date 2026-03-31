@@ -150,7 +150,7 @@ class BasePage(QWidget):
         QPushButton:hover {{ background-color: {colors['bg_btn_hover']}; }}
         QPushButton:pressed {{ background-color: {colors['bg_btn_pressed']}; }}
 
-        QComboBox {{ background-color: {colors['bg_btn']}; border-radius: 5px; border: none; padding-left: 10px; }}
+        QComboBox {{ background-color: {colors['bg_btn']}; border-radius: 5px; border: none; padding-left: 20px; }}
         QComboBox::drop-down {{ border: none; }}
         QComboBox QAbstractItemView {{ background-color: {colors['bg_btn']}; color: {colors['text']}; selection-background-color: {colors['accent']}; }}
         
@@ -367,26 +367,18 @@ class BasePage(QWidget):
         return toast
 
     def show_info(self, title: str = "Info", content: str = "", duration: int = 2000):
-        """Show info message (Soft Blue)"""
         self._show_notification(title, content, "#E1F0FF", "#005A9E", duration)
     
     def show_success(self, title: str = "Success", content: str = "", duration: int = 2000):
-        """Show success message (Soft Green)"""
         self._show_notification(title, content, "#DFF6DD", "#0F5C2E", duration)
     
     def show_warning(self, title: str = "Warning", content: str = "", duration: int = 3000):
-        """Show warning message (Soft Yellow/Orange)"""
         return self._show_notification(title, content, "#FFF4CE", "#9D5D00", duration)
     
     def show_error(self, title: str = "Error", content: str = "", duration: int = 4000):
-        """Show error message (Soft Red)"""
         self._show_notification(title, content, "#FDE7E9", "#A80000", duration)
         
     def show_confirmation_dialog(self, title: str, content: str, is_warning: bool = False) -> bool:
-        """
-        Show a standard confirmation dialog with Yes and No buttons.
-        Returns True if Yes is clicked, False otherwise.
-        """
         box = QMessageBox(self.window())
         box.setWindowTitle(title)
         box.setText(content)
@@ -405,10 +397,8 @@ class BasePage(QWidget):
             }}
             QLabel {{
                 color: {text_color};
-                font-family: "Segoe UI", "Microsoft YaHei";
                 font-size: 14px;
                 min-width: 300px;
-                min-height: 80px;
             }}
             QPushButton {{
                 background-color: {btn_bg};
@@ -423,10 +413,10 @@ class BasePage(QWidget):
                 background-color: {btn_hover};
             }}
         """
-        box.setStyleSheet(style)
+        # box.setStyleSheet(style)
         
-        icon = QMessageBox.Icon.Warning if is_warning else QMessageBox.Icon.Information
-        box.setIcon(icon)
+        # Disable standard icon
+        box.setIcon(QMessageBox.Icon.NoIcon)
         
         # Customize buttons
         yes_btn = box.addButton("Yes", QMessageBox.ButtonRole.YesRole)
@@ -435,16 +425,16 @@ class BasePage(QWidget):
         
         # Add accent color to Yes button
         accent_bg = "#568af2" if not is_warning else "#e06c75"
-        yes_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {accent_bg};
-                color: white;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: {'#4d7ce6' if not is_warning else '#d95a63'};
-            }}
-        """)
+        # yes_btn.setStyleSheet(f"""
+        #     QPushButton {{
+        #         background-color: {accent_bg};
+        #         color: white;
+        #         border: none;
+        #     }}
+        #     QPushButton:hover {{
+        #         background-color: {'#4d7ce6' if not is_warning else '#d95a63'};
+        #     }}
+        # """)
         
         box.exec()
         return box.clickedButton() == yes_btn
