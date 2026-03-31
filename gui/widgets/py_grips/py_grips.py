@@ -1,4 +1,4 @@
-# ///////////////////////////////////////////////////////////////
+﻿# ///////////////////////////////////////////////////////////////
 #
 # BY: WANDERSON M.PIMENTA
 # PROJECT MADE WITH: Qt Designer and PySide6
@@ -189,8 +189,6 @@ class PyGrips(QWidget):
 
         elif hasattr(self.wi, 'bottom_right_grip'):
             self.wi.bottom_right_grip.setGeometry(self.width() - 15, self.height() - 15, 15, 15)
-
-
 # GRIP WIDGTES
 # ///////////////////////////////////////////////////////////////
 class Widgets(object):

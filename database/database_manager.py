@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
-# Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+# Copyright (C) 2025  Qilang虏 <ximing766@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,6 @@ from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 
 from .models import Base
-
-
 class DatabaseManager:
     """Base database manager class"""
     

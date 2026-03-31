@@ -1,4 +1,4 @@
-# ///////////////////////////////////////////////////////////////
+﻿# ///////////////////////////////////////////////////////////////
 #
 # BY: WANDERSON M.PIMENTA
 # PROJECT MADE WITH: Qt Designer and PySide6
@@ -17,8 +17,6 @@
 # IMPORT QT CORE
 # ///////////////////////////////////////////////////////////////
 from gui.qt_core import *
-
-
 class Ui_MainPages(object):
     def setupUi(self, MainPages):
         if not MainPages.objectName():
@@ -65,8 +63,6 @@ class Ui_MainPages(object):
         self.label.setAlignment(Qt.AlignCenter)
 
         self.center_page_layout.addWidget(self.label)
-
-
         self.page_1_layout.addWidget(self.welcome_base, 0, Qt.AlignHCenter)
 
         self.pages.addWidget(self.page_1)
@@ -156,13 +152,9 @@ class Ui_MainPages(object):
         self.pages.addWidget(self.page_3)
 
         self.main_pages_layout.addWidget(self.pages)
-
-
         self.retranslateUi(MainPages)
 
         self.pages.setCurrentIndex(0)
-
-
         QMetaObject.connectSlotsByName(MainPages)
     # setupUi
 

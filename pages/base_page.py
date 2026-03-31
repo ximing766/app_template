@@ -314,7 +314,7 @@ class BasePage(QWidget):
 
     # Information display methods
     def _show_notification(self, title: str, content: str, bg_color: str, text_color: str = "#ffffff",
-                          duration: int = 2000, buttons=None, default_button=None):
+                          duration: int = 2000):
        
         toast = QWidget(self.window())
         toast.setObjectName("ToastWidget")
@@ -374,13 +374,78 @@ class BasePage(QWidget):
         """Show success message (Soft Green)"""
         self._show_notification(title, content, "#DFF6DD", "#0F5C2E", duration)
     
-    def show_warning(self, title: str = "Warning", content: str = "", 
-                     buttons=None, default_button=None, duration: int = 3000):
+    def show_warning(self, title: str = "Warning", content: str = "", duration: int = 3000):
         """Show warning message (Soft Yellow/Orange)"""
-        is_modal = buttons is not None
-        return self._show_notification(title, content, "#FFF4CE", "#9D5D00",
-                                     duration, is_modal, buttons, default_button)
+        return self._show_notification(title, content, "#FFF4CE", "#9D5D00", duration)
     
     def show_error(self, title: str = "Error", content: str = "", duration: int = 4000):
         """Show error message (Soft Red)"""
         self._show_notification(title, content, "#FDE7E9", "#A80000", duration)
+        
+    def show_confirmation_dialog(self, title: str, content: str, is_warning: bool = False) -> bool:
+        """
+        Show a standard confirmation dialog with Yes and No buttons.
+        Returns True if Yes is clicked, False otherwise.
+        """
+        box = QMessageBox(self.window())
+        box.setWindowTitle(title)
+        box.setText(content)
+        
+        # Apply modern styling
+        is_light = self._get_current_theme().lower() == "light"
+        bg_color = "#f0f2f5" if is_light else "#282c34"
+        text_color = "#2c3e50" if is_light else "#abb2bf"
+        btn_bg = "#ffffff" if is_light else "#3f444e"
+        btn_hover = "#e2e8f0" if is_light else "#4a505c"
+        btn_border = "#cbd5e1" if is_light else "#1e2229"
+        
+        style = f"""
+            QMessageBox {{
+                background-color: {bg_color};
+            }}
+            QLabel {{
+                color: {text_color};
+                font-family: "Segoe UI", "Microsoft YaHei";
+                font-size: 14px;
+                min-width: 300px;
+                min-height: 80px;
+            }}
+            QPushButton {{
+                background-color: {btn_bg};
+                color: {text_color};
+                border: 1px solid {btn_border};
+                border-radius: 5px;
+                padding: 6px 20px;
+                min-width: 80px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_hover};
+            }}
+        """
+        box.setStyleSheet(style)
+        
+        icon = QMessageBox.Icon.Warning if is_warning else QMessageBox.Icon.Information
+        box.setIcon(icon)
+        
+        # Customize buttons
+        yes_btn = box.addButton("Yes", QMessageBox.ButtonRole.YesRole)
+        no_btn = box.addButton("No", QMessageBox.ButtonRole.NoRole)
+        box.setDefaultButton(yes_btn)
+        
+        # Add accent color to Yes button
+        accent_bg = "#568af2" if not is_warning else "#e06c75"
+        yes_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {accent_bg};
+                color: white;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: {'#4d7ce6' if not is_warning else '#d95a63'};
+            }}
+        """)
+        
+        box.exec()
+        return box.clickedButton() == yes_btn
+

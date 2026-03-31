@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
-# Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+# Copyright (C) 2025  Qilang虏 <ximing766@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,8 +13,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, synonym
 
 Base = declarative_base()
-
-
 class User(Base):
     """User model for SQLAlchemy"""
     __tablename__ = 'users'
@@ -45,6 +43,3 @@ class User(Base):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_login': self.last_login.isoformat() if self.last_login else None
         }
-
-
-

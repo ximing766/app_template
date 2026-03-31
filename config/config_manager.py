@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
-# Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+# Copyright (C) 2025  Qilang虏 <ximing766@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -11,8 +11,6 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-
-
 class ConfigManager:
     """Manages application configuration settings"""
     

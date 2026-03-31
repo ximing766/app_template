@@ -168,12 +168,20 @@ Write-Host "Checking if gh cli is installed..." -ForegroundColor Cyan
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "Creating GitHub Release $TAG_NAME..." -ForegroundColor Yellow
 
-    $NotesFile = "RELEASE_NOTES.md"
-    $ReleaseNotes = "Automated release of version $TAG_NAME`n`nBuilt on $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
-    if (Test-Path $NotesFile) {
-        $ReleaseNotes = Get-Content $NotesFile -Raw
-        Write-Host "Found release notes in $NotesFile" -ForegroundColor Cyan
-    }
+    # Modify your release notes here directly:
+    $ReleaseNotes = @"
+## $TAG_NAME ($(Get-Date -Format 'yyyy-MM-dd'))
+app template
+
+### 新功能
+- 1 
+
+### 优化
+- 1
+
+### 修复
+- 1 fix bug
+"@
 
     gh release create $TAG_NAME $ZipFilePath `
         --title "Release $TAG_NAME" `

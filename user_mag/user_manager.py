@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
-# Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+# Copyright (C) 2025  Qilang虏 <ximing766@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@ from PySide6.QtCore import QObject, Signal
 
 # Simplified import - main.py already adds project root to sys.path
 from database import DatabaseManager, UserDatabase, User
-
-
 class UserSession:
     """Current user session information"""
     def __init__(self):
@@ -53,8 +51,6 @@ class UserSession:
     def is_admin(self) -> bool:
         """Check if current user is admin"""
         return self.role == 'admin'
-
-
 class UserManager(QObject):
     """Manages user authentication and database operations"""
     user_logged_in = Signal(str)      # username

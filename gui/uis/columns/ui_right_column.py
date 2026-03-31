@@ -1,4 +1,4 @@
-# ///////////////////////////////////////////////////////////////
+﻿# ///////////////////////////////////////////////////////////////
 #
 # BY: WANDERSON M.PIMENTA
 # PROJECT MADE WITH: Qt Designer and PySide6
@@ -17,8 +17,6 @@
 # IMPORT QT CORE
 # ///////////////////////////////////////////////////////////////
 from gui.qt_core import *
-
-
 class Ui_RightColumn(object):
     def setupUi(self, RightColumn):
         if not RightColumn.objectName():
@@ -97,13 +95,9 @@ class Ui_RightColumn(object):
         self.menus.addWidget(self.menu_2)
 
         self.main_pages_layout.addWidget(self.menus)
-
-
         self.retranslateUi(RightColumn)
 
         self.menus.setCurrentIndex(1)
-
-
         QMetaObject.connectSlotsByName(RightColumn)
     # setupUi
 

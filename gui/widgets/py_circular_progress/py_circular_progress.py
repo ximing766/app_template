@@ -1,4 +1,4 @@
-# ///////////////////////////////////////////////////////////////
+﻿# ///////////////////////////////////////////////////////////////
 #
 # BY: WANDERSON M.PIMENTA
 # PROJECT MADE WITH: Qt Designer and PySide6
@@ -66,8 +66,6 @@ class PyCircularProgress(QWidget):
     def set_value(self, value):
         self.value = value
         self.repaint() # Render progress bar after change value
-
-
     # PAINT EVENT (DESIGN YOUR CIRCULAR PROGRESS HERE)
     def paintEvent(self, e):
         # SET PROGRESS PARAMETERS

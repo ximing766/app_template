@@ -1,4 +1,4 @@
-# Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+﻿# Copyright (C) 2025  Qilang虏 <ximing766@gmail.com>
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
 from PySide6.QtCore import Qt, QTimer, Signal
@@ -89,12 +89,12 @@ class SplashScreen(QWidget):
                                             Qt.TransformationMode.SmoothTransformation)
                 self.logo_label.setPixmap(scaled_pixmap)
             else:
-                self.logo_label.setText("📱")
+                self.logo_label.setText("馃摫")
                 font = QFont()
                 font.setPointSize(48)
                 self.logo_label.setFont(font)
         else:
-            self.logo_label.setText("📱")
+            self.logo_label.setText("馃摫")
             font = QFont()
             font.setPointSize(48)
             self.logo_label.setFont(font)
@@ -163,8 +163,6 @@ class SplashScreen(QWidget):
             self.progress_timer.stop()
         self.finished.emit()
         super().closeEvent(event)
-
-
 def show_splash_screen(app_name="Application", logo_path=None, duration=3000):
     """Simple convenience function to show splash screen"""
     splash = SplashScreen(app_name, logo_path)

@@ -2,5 +2,5 @@
 
 # BM NAME & VERSION
 APP_NAME = "app-demo"
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.1.1"
 GITHUB_REPO = "ximing766/app_template"  # Format: username/repo
