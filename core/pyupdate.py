@@ -165,18 +165,35 @@ if __name__ == "__main__":
                 f.write(updater_script)
             
             app_root = os.path.abspath(os.getcwd())
-            exe_name = os.path.basename(sys.executable)
+            # Determine correct executable path to restart
+            if getattr(sys, 'frozen', False):
+                # PyInstaller
+                exe_path = sys.executable
+            elif '__compiled__' in globals():
+                # Nuitka
+                exe_path = sys.argv[0]
+            else:
+                # Normal python script
+                exe_path = sys.argv[0]
+                
+            exe_name = os.path.basename(exe_path)
             
             # Use backslashes for Windows xcopy
             extracted_path_win = str(Path(extracted_path).resolve())
             app_root_win = str(Path(app_root).resolve())
+            
+            # If we're running as a python script, we shouldn't start python.exe in our dir
+            if exe_path.endswith('.py') or exe_name.lower() == 'python.exe':
+                restart_cmd = f'start "" "{sys.executable}" "{os.path.join(app_root_win, exe_name)}"'
+            else:
+                restart_cmd = f'start "" "{os.path.join(app_root_win, exe_name)}"'
             
             bat_content = f"""@echo off
 timeout /t 2 /nobreak > nul
 echo Updating application...
 xcopy /s /e /y "{extracted_path_win}\\*" "{app_root_win}\\"
 echo Update complete. Restarting...
-start "" "{os.path.join(app_root_win, exe_name)}"
+{restart_cmd}
 del "%~f0"
 """
             bat_file = temp_dir / "finish_update.bat"

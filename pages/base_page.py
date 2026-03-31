@@ -96,7 +96,7 @@ class BasePage(QWidget):
             "border_input_focus": "#568af2" if is_light else "#477faa",
             "bg_input_focus": "rgba(242, 238, 245, 0.99)" if is_light else "rgba(27, 32, 44, 0.99)",
             "bg_checkbox": "#ffffff" if is_light else "#21252b",
-            "border_checkbox": "#A896AF" if is_light else "#98a6ca",
+            "border_checkbox": "#91DDD3" if is_light else "#98a6ca",
             "bg_checkbox_checked": "#a783cf" if is_light else "#4c6291",
             "border_checkbox_hover": "#8CB8FF" if is_light else "#564463",
             "bg_btn": "#ffffff" if is_light else "#3f444e",
@@ -413,7 +413,7 @@ class BasePage(QWidget):
                 background-color: {btn_hover};
             }}
         """
-        # box.setStyleSheet(style)
+        box.setStyleSheet(style)
         
         # Disable standard icon
         box.setIcon(QMessageBox.Icon.NoIcon)
@@ -425,16 +425,16 @@ class BasePage(QWidget):
         
         # Add accent color to Yes button
         accent_bg = "#568af2" if not is_warning else "#e06c75"
-        # yes_btn.setStyleSheet(f"""
-        #     QPushButton {{
-        #         background-color: {accent_bg};
-        #         color: white;
-        #         border: none;
-        #     }}
-        #     QPushButton:hover {{
-        #         background-color: {'#4d7ce6' if not is_warning else '#d95a63'};
-        #     }}
-        # """)
+        yes_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {accent_bg};
+                color: white;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: {'#4d7ce6' if not is_warning else '#d95a63'};
+            }}
+        """)
         
         box.exec()
         return box.clickedButton() == yes_btn

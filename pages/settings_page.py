@@ -158,10 +158,12 @@ class SettingsPage(BasePage):
         font_size_layout.addWidget(self.font_size_value_label)
         self.font_size_slider.valueChanged.connect(self.on_font_size_changed)
 
-        self.help_card = HyperlinkCard("https://ximing766.github.io/my-project-doc/", "Open Help Page")
+        self.help_card = PushSettingCard("About")
+        self.help_card.clicked.connect(self.show_about_dialog)
         self.feedback_card = PushSettingCard("Provide Feedback")
         self.feedback_card.clicked.connect(self.show_feedback_dialog)
-        self.update_card = PushSettingCard("Check for Updates")
+
+        self.update_card = PushSettingCard("Check for Updates")  # BM update
         self.update_card.clicked.connect(self.check_update)
 
         content_layout.addWidget(self.theme_card)
@@ -285,7 +287,7 @@ class SettingsPage(BasePage):
         self.show_info("Feedback", "Thank you for your interest in providing feedback!\n\nPlease visit our GitHub repository.")
 
     def show_about_dialog(self):
-        self.show_info("About", f"Application Template\nVersion {APP_VERSION}\nAuthor: @Qilang²\nCopyright © 2024 | MIT License")
+        self.show_confirmation_dialog("About", f"Application Template\nVersion {APP_VERSION}\nAuthor: @Qilang²\nCopyright © 2024 | MIT License")
 
     def __str__(self):
         return f"SettingsPage(id='{self.page_id}')"

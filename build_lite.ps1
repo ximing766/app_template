@@ -93,8 +93,9 @@ if ($skipBuild) {
         --assume-yes-for-downloads `
         --jobs=8 `
         --python-flag=-OO `
-        --lto=yes `
-        --nofollow-import-to=numpy,scipy,pandas,matplotlib,IPython,PIL,tkinter `
+        --lto=no `
+        --nofollow-import-to=numpy,scipy,pandas,matplotlib,IPython,PIL,tkinter,PyQt6,PyQt5 `
+        --noinclude-dlls=*.pdb `
         --remove-output `
         $MainFile
 

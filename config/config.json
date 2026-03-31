@@ -21,8 +21,8 @@
     },
     "background": {
         "enabled": true,
-        "opacity": 0.34,
-        "current_image": "assets/PIC/L_1.png",
+        "opacity": 0.36,
+        "current_image": "assets/PIC/L_4.jpg",
         "available_images": [
             "assets/PIC/D_4.jpg",
             "assets/PIC/D_6.png",
@@ -30,10 +30,10 @@
             "assets/PIC/L_2.jpg",
             "assets/PIC/L_4.jpg"
         ],
-        "current_index": 2
+        "current_index": 4
     },
     "theme": {
-        "current_theme": "light",
+        "current_theme": "dark",
         "themes": {
             "light": {
                 "name": "Light Theme",
@@ -50,7 +50,7 @@
         }
     },
     "font": {
-        "family": "Consolas",
+        "family": "Courier New",
         "size": 12
     },
     "onedark": {
