@@ -79,10 +79,12 @@ if ($skipBuild) {
     Write-Host "Skipping Nuitka build step as requested." -ForegroundColor Cyan
 } else {
     Write-Host "Building executable with Nuitka..." -ForegroundColor Yellow
+    $startTime = Get-Date
     python -m nuitka `
         --standalone `
         --windows-console-mode=attach `
         --enable-plugin=pyside6 `
+        --noinclude-qt-translations `
         --include-qt-plugins=sensible,styles `
         --windows-icon-from-ico=assets/logo.ico `
         --include-data-dir=assets=assets `
@@ -91,7 +93,7 @@ if ($skipBuild) {
         --output-dir=$OUTPUT_DIR `
         --output-filename=$APP_NAME `
         --assume-yes-for-downloads `
-        --jobs=8 `
+        --jobs=16 `
         --python-flag=-OO `
         --lto=no `
         --nofollow-import-to=numpy,scipy,pandas,matplotlib,IPython,PIL,tkinter,PyQt6,PyQt5 `
@@ -104,8 +106,10 @@ if ($skipBuild) {
         Pop-Location
         Exit 1
     }
-
-    Write-Host "Build completed successfully!" -ForegroundColor Green
+    $endTime = Get-Date
+    $duration = $endTime - $startTime
+    $durationStr = "{0:mm} min {0:ss} sec" -f $duration
+    Write-Host "Build completed successfully in $durationStr!" -ForegroundColor Green
 }
 
 if (-not $release) {
@@ -178,10 +182,10 @@ app template
 - 1 
 
 ### Optimize
-- 1 optimize code structure
+- 1 
 
 ### Fix
-- 1 fix some bug
+- 1 fix bug in app update
 "@
 
     gh release create $TAG_NAME $ZipFilePath `

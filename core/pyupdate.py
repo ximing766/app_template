@@ -64,7 +64,7 @@ class UpdateManager(QThread):
             else:
                 self.update_finished.emit(False, f"GitHub API error: {response.status_code}")
         except Exception as e:
-            self.update_finished.emit(False, str(e))
+            self.update_finished.emit(False, "Unknown error")
 
     def download_update(self):
         """Download the update package"""
@@ -109,61 +109,6 @@ class UpdateManager(QThread):
         """Prepare and launch the updater script"""
         self.status_changed.emit("Preparing update...")
         try:
-            # Create a simple python script to handle file replacement
-            updater_script = """
-import os
-import sys
-import shutil
-import time
-import subprocess
-
-def apply_update(src, dst, exe_name):
-    print(f"Waiting for {exe_name} to close...")
-    time.sleep(2)
-    
-    try:
-        # If running as standalone dist, src might contain a subfolder like 'main.dist'
-        # We need to find the actual content folder
-        content_src = src
-        for item in os.listdir(src):
-            if os.path.isdir(os.path.join(src, item)) and item.endswith('.dist'):
-                content_src = os.path.join(src, item)
-                break
-        
-        print(f"Copying from {content_src} to {dst}...")
-        # Copy all files from content_src to dst
-        for item in os.listdir(content_src):
-            s = os.path.join(content_src, item)
-            d = os.path.join(dst, item)
-            if os.path.isdir(s):
-                if os.path.exists(d):
-                    shutil.rmtree(d)
-                shutil.copytree(s, d)
-            else:
-                shutil.copy2(s, d)
-        
-        print("Update applied. Restarting application...")
-        app_exe = os.path.join(dst, exe_name)
-        if not app_exe.endswith('.exe'): app_exe += '.exe'
-        
-        subprocess.Popen([app_exe])
-        
-        # Cleanup temp
-        time.sleep(1)
-        shutil.rmtree(os.path.dirname(src))
-    except Exception as e:
-        print(f"Update failed: {e}")
-        input("Press Enter to exit...")
-
-if __name__ == "__main__":
-    apply_update(sys.argv[1], sys.argv[2], sys.argv[3])
-"""
-            temp_dir = Path("temp_update")
-            temp_dir.mkdir(exist_ok=True)
-            updater_file = temp_dir / "apply_update.py"
-            with open(updater_file, "w", encoding="utf-8") as f:
-                f.write(updater_script)
-            
             app_root = os.path.abspath(os.getcwd())
             # Determine correct executable path to restart
             if getattr(sys, 'frozen', False):
@@ -181,6 +126,7 @@ if __name__ == "__main__":
             # Use backslashes for Windows xcopy
             extracted_path_win = str(Path(extracted_path).resolve())
             app_root_win = str(Path(app_root).resolve())
+            temp_update_win = str(Path(extracted_path).parent.resolve())
             
             # If we're running as a python script, we shouldn't start python.exe in our dir
             if exe_path.endswith('.py') or exe_name.lower() == 'python.exe':
@@ -188,20 +134,53 @@ if __name__ == "__main__":
             else:
                 restart_cmd = f'start "" "{os.path.join(app_root_win, exe_name)}"'
             
+            # Create a batch file in system TEMP to avoid locking temp_update folder
+            temp_bat_dir = os.environ.get('TEMP', app_root)
+            bat_file = os.path.join(temp_bat_dir, "finish_app_update.bat")
+            
             bat_content = f"""@echo off
+title App Update
+echo Updating application... Please wait.
+
+:: Give the parent application a moment to close normally
 timeout /t 2 /nobreak > nul
-echo Updating application...
-xcopy /s /e /y "{extracted_path_win}\\*" "{app_root_win}\\"
-echo Update complete. Restarting...
-{restart_cmd}
+
+:: Force kill the application if it's still running to release file locks
+taskkill /f /im "{exe_name}" > nul 2>&1
+
+:: Wait a bit more to ensure file locks are released by the OS
+timeout /t 1 /nobreak > nul
+
+:: Ensure we copy from the right source (handle potential main.dist subfolder)
+set "src={extracted_path_win}"
+if exist "%src%\\main.dist" set "src=%src%\\main.dist"
+
+echo Copying files from "%src%" to "{app_root_win}"...
+xcopy /s /e /y /q /r /h /k "%src%\\*" "{app_root_win}\\"
+
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Copy failed! Update might be incomplete.
+    echo Please ensure the application is completely closed and try again.
+    pause
+) else (
+    echo.
+    echo [SUCCESS] Update applied. Cleaning up temporary files...
+    rmdir /s /q "{temp_update_win}"
+    echo Restarting application...
+    {restart_cmd}
+)
 del "%~f0"
 """
-            bat_file = temp_dir / "finish_update.bat"
             with open(bat_file, "w", encoding="utf-8") as f:
                 f.write(bat_content)
             
-            # Launch bat and exit app
-            subprocess.Popen([str(bat_file)], shell=True)
+            # Launch bat and exit app in a new console window
+            # Use CREATE_NEW_CONSOLE only, as DETACHED_PROCESS conflicts with it and causes WinError 87
+            subprocess.Popen(
+                ["cmd.exe", "/c", bat_file], 
+                creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
             sys.exit(0)
             
         except Exception as e:

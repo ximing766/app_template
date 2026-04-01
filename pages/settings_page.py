@@ -116,7 +116,7 @@ class SettingsPage(BasePage):
         fonts = ["Consolas", "Courier New", "Lucida Console", "JetBrains Mono", "Cascadia Code"]
         self.font_card = ComboSettingCard(fonts)
         self.font_combo = self.font_card.combo
-        current_font_family = "Courier New"
+        current_font_family = "JetBrains Mono"
         if self.config_manager:
             current_font_family = self.config_manager.get_font_family()
         index = self.font_combo.findText(current_font_family)

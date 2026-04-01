@@ -22,7 +22,7 @@
     "background": {
         "enabled": true,
         "opacity": 0.36,
-        "current_image": "assets/PIC/L_4.jpg",
+        "current_image": "assets/PIC/L_1.png",
         "available_images": [
             "assets/PIC/D_4.jpg",
             "assets/PIC/D_6.png",
@@ -30,7 +30,7 @@
             "assets/PIC/L_2.jpg",
             "assets/PIC/L_4.jpg"
         ],
-        "current_index": 4
+        "current_index": 2
     },
     "theme": {
         "current_theme": "dark",
