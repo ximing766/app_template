@@ -78,7 +78,7 @@ class PyWindow(QFrame):
         # ///////////////////////////////////////////////////////////////
         if layout == Qt.Vertical:
             # VERTICAL LAYOUT
-            self.layout = QHBoxLayout(self)
+            self.layout = QVBoxLayout(self)
         else:
             # HORIZONTAL LAYOUT
             self.layout = QHBoxLayout(self)

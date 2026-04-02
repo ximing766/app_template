@@ -124,6 +124,9 @@ class PyTitleBar(QWidget):
                 parent.dragPos = event.globalPos()
                 event.accept()
 
+        def setDragPos(event):
+            parent.dragPos = event.globalPos()
+
         # MOVE APP WIDGETS
         if is_custom_title_bar:
             self.top_logo.mouseMoveEvent = moveWindow
@@ -131,6 +134,13 @@ class PyTitleBar(QWidget):
             self.title_label.mouseMoveEvent = moveWindow
             self.div_2.mouseMoveEvent = moveWindow
             self.div_3.mouseMoveEvent = moveWindow
+            
+            # SET DRAG POS
+            self.top_logo.mousePressEvent = setDragPos
+            self.div_1.mousePressEvent = setDragPos
+            self.title_label.mousePressEvent = setDragPos
+            self.div_2.mousePressEvent = setDragPos
+            self.div_3.mousePressEvent = setDragPos
 
         # MAXIMIZE / RESTORE
         if is_custom_title_bar:
@@ -228,8 +238,8 @@ class PyTitleBar(QWidget):
     def set_title(self, title):
         # Enhance the title by adding some HTML formatting to make it look modern
         enhanced_title = f"""
-            <span style='font-weight: 600; color: {self._context_color};'>{title.split()[0]}</span>
-            <span style='font-weight: normal; color: {self._text_foreground};'>{' '.join(title.split()[1:]) if len(title.split()) > 1 else ''}</span>
+            <span style='font-size: 15px; font-weight: 700; color: {self._context_color};'>{title.split()[0]}</span>
+            <span style='font-size: 14px; font-weight: 500; color: {self._text_foreground}; opacity: 0.95;'>{' '.join(title.split()[1:]) if len(title.split()) > 1 else ''}</span>
         """
         self.title_label.setText(enhanced_title)
 

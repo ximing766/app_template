@@ -2,10 +2,14 @@
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
 import sys
 import os
-from PySide6.QtCore import Qt, QSize, QRect, Signal, QTimer, QEventLoop
-from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter, QPainterPath
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QWidget, QSpacerItem, QSizePolicy, QDialog, QLineEdit, QCheckBox, QPushButton, QMessageBox
-from typing import Optional
+import math
+from PySide6.QtCore import Qt, QSize, QRect, Signal, QTimer, QEventLoop, QPoint
+from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter, QPainterPath, QCursor
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QWidget, QSpacerItem, QSizePolicy, QDialog, QLineEdit, QCheckBox, QPushButton, QMessageBox, QFrame
+
+# IMPORT ONEDARK COMPONENTS
+from gui.widgets.py_window.py_window import PyWindow
+from gui.widgets.py_title_bar.py_title_bar import PyTitleBar
 
 
 class LoginDialog(QDialog):
@@ -17,53 +21,74 @@ class LoginDialog(QDialog):
         self.user_manager = None
         self._event_loop = None
         self._dialog_result = None
+        self._current_toast = None
+        self._gradient_angle = 0
+        self.dragPos = QPoint()
         self.setupUI()
         self.setupWindow()
+        
+        # DYNAMIC GRADIENT TIMER
+        self.gradient_timer = QTimer(self)
+        self.gradient_timer.timeout.connect(self.update_gradient)
+        self.gradient_timer.start(50) # Update every 50ms
 
     def setupUI(self):
-        self.horizontalLayout = QHBoxLayout(self)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout.setSpacing(0)
-        self.label = QLabel()
-        self.label.setText("")
-        background_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "PIC", "person6.jpg").replace(os.sep, '/')
-        self.label.setMinimumSize(QSize(500, 500))
-        self.label.setMaximumSize(QSize(500, 500))
-        label_size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.label.setSizePolicy(label_size_policy)
-        if os.path.exists(background_path):
-            background_pixmap = QPixmap(background_path)
-            scaled_pixmap = background_pixmap.scaled(500, 500, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            self.label.setPixmap(scaled_pixmap)
-            self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.label.setScaledContents(False)
-        else:
-            self.label.setStyleSheet("""
-                QLabel {
-                    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                        stop:0 #667eea, stop:1 #764ba2);
-                    border: none;
-                }
-            """)
-        self.horizontalLayout.addWidget(self.label)
-        self.widget = QWidget()
-        widget_size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        widget_size_policy.setHorizontalStretch(1)
-        widget_size_policy.setVerticalStretch(0)
-        self.widget.setSizePolicy(widget_size_policy)
-        self.widget.setStyleSheet("background-color: #2c313c; color: #f8f8f2;")
-        self.verticalLayout_2 = QVBoxLayout(self.widget)
-        self.verticalLayout_2.setContentsMargins(20, 20, 20, 20)
-        self.verticalLayout_2.setSpacing(9)
-        spacerItem = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        self.verticalLayout_2.addItem(spacerItem)
+        # MAIN LAYOUT
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
+        
+        # UI COMPATIBILITY FOR PyTitleBar
+        self.ui = self
+        self.central_widget_layout = self.main_layout
+
+        # ADD PY WINDOW
+        self.window = PyWindow(
+            self,
+            layout = Qt.Vertical,
+            bg_color = "#1c1f25",
+            border_radius = 10,
+            border_size = 2,
+            border_color = "#343b48",
+            enable_shadow = True
+        )
+        self.main_layout.addWidget(self.window)
+
+        # ADD TITLE BAR
+        self.title_bar = PyTitleBar(
+            self,
+            self,
+            logo_width = 100,
+            bg_color = "transparent",
+            div_color = "transparent",
+            btn_bg_color = "transparent",
+            btn_bg_color_hover = "rgba(255, 255, 255, 0.1)",
+            btn_bg_color_pressed = "rgba(255, 255, 255, 0.05)",
+            icon_color = "#f8f8f2",
+            icon_color_hover = "#ffffff",
+            icon_color_pressed = "#edf0f5",
+            context_color = "#6c99f4",
+            text_foreground = "#f8f8f2",
+            radius = 8,
+            font_family = "Segoe UI",
+            title_size = 10,
+            is_custom_title_bar = True
+        )
+        self.title_bar.set_title("Login")
+        self.title_bar.setFixedHeight(42)
+        self.window.layout.addWidget(self.title_bar)
+
+        # LOGIN CONTENT WIDGET
+        self.login_content = QWidget()
+        self.login_content.setStyleSheet("background-color: transparent; color: #f8f8f2;")
+        self.window.layout.addWidget(self.login_content)
+
+        self.verticalLayout_2 = QVBoxLayout(self.login_content)
+        self.verticalLayout_2.setContentsMargins(40, 20, 40, 40)
+        self.verticalLayout_2.setSpacing(15)
+
+        # LOGO
         self.label_2 = QLabel()
-        self.label_2.setEnabled(True)
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
-        self.label_2.setSizePolicy(sizePolicy)
         self.label_2.setMinimumSize(QSize(100, 100))
         self.label_2.setMaximumSize(QSize(100, 100))
         logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.png")
@@ -88,47 +113,48 @@ class LoginDialog(QDialog):
             painter.end()
             self.label_2.setPixmap(rounded_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self.label_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.label_2.setStyleSheet("""
-            QLabel {
-                border-radius: 50px;
-            }
-        """)
         self.label_2.setScaledContents(True)
         self.verticalLayout_2.addWidget(self.label_2, 0, Qt.AlignmentFlag.AlignHCenter)
-        spacerItem1 = QSpacerItem(20, 15, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        self.verticalLayout_2.addItem(spacerItem1)
-        self.username_edit = QLineEdit(self.widget)
+
+        # SPACER
+        self.verticalLayout_2.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
+
+        # USERNAME
+        self.username_edit = QLineEdit()
         self.username_edit.setClearButtonEnabled(True)
         self.username_edit.setFixedHeight(40)
         self.username_edit.setText("admin")
-        self.username_edit.setStyleSheet("background-color: #1e2229; border: 1px solid #3f444e; border-radius: 5px; padding: 0 10px;")
+        self.username_edit.setStyleSheet("background-color: #b3bdc9; border: 1px solid #6177a5; border-radius: 5px; padding: 0 10px; color: #181817;")
         self.verticalLayout_2.addWidget(self.username_edit)
-        self.password_edit = QLineEdit(self.widget)
+
+        # PASSWORD
+        self.password_edit = QLineEdit()
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setClearButtonEnabled(True)
         self.password_edit.setFixedHeight(40)
-        self.password_edit.setStyleSheet("background-color: #1e2229; border: 1px solid #3f444e; border-radius: 5px; padding: 0 10px;")
+        self.password_edit.setStyleSheet("background-color: #b3bdc9; border: 1px solid #6177a5; border-radius: 5px; padding: 0 10px; color: #181817;")
         self.verticalLayout_2.addWidget(self.password_edit)
-        spacerItem2 = QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        self.verticalLayout_2.addItem(spacerItem2)
-        self.remember_checkbox = QCheckBox("Remember me", self.widget)
+
+        # REMEMBER ME
+        self.remember_checkbox = QCheckBox()
         self.remember_checkbox.setChecked(True)
+        self.remember_checkbox.setStyleSheet(" background-color: transparent; color: #131301;")
         self.verticalLayout_2.addWidget(self.remember_checkbox)
-        spacerItem3 = QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        self.verticalLayout_2.addItem(spacerItem3)
-        self.login_button = QPushButton("Login", self.widget)
+
+        # LOGIN BUTTON
+        self.login_button = QPushButton()
         self.login_button.clicked.connect(self.handle_login)
         self.login_button.setFixedHeight(40)
         self.login_button.setStyleSheet("background-color: #568af2; color: white; border-radius: 5px; font-weight: bold;")
+        self.login_button.setAutoDefault(False)
+        self.login_button.setDefault(False)
         self.verticalLayout_2.addWidget(self.login_button)
-        spacerItem4 = QSpacerItem(20, 6, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        self.verticalLayout_2.addItem(spacerItem4)
-        self.pushButton_2 = QPushButton("Forgot password?", self.widget)
+
+        # FORGOT PASSWORD
+        self.pushButton_2 = QPushButton()
         self.pushButton_2.setStyleSheet("background-color: transparent; color: #568af2; text-decoration: underline; border: none;")
         self.verticalLayout_2.addWidget(self.pushButton_2)
-        spacerItem5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        self.verticalLayout_2.addItem(spacerItem5)
-        self.horizontalLayout.addWidget(self.widget)
+
         self.retranslateUi()
         self.connect_signals()
         self.password_edit.setFocus()
@@ -137,25 +163,50 @@ class LoginDialog(QDialog):
         self.username_edit.setPlaceholderText("Username:")
         self.password_edit.setPlaceholderText("Password:")
         self.remember_checkbox.setText("Remember me")
-        self.login_button.setText("Login")
+        self.login_button.setText("LOGIN")
         self.pushButton_2.setText("Forgot password?")
 
     def setupWindow(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
-        self.label.setScaledContents(False)
-        self.setWindowOpacity(1)
-        self.resize(800, 500)
-        self.setMinimumSize(800, 500)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.resize(400, 500)
+        self.setMinimumSize(400, 500)
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        
+        # Center on screen
         desktop = QApplication.primaryScreen().availableGeometry()
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
+
+    def mousePressEvent(self, event):
+        # Store current mouse position
+        self.dragPos = event.globalPos()
+
+    def update_gradient(self):  # BM 渐变动态背景
+        # UPDATE GRADIENT ANGLE
+        self._gradient_angle += 0.05
+        if self._gradient_angle > 2 * math.pi:
+            self._gradient_angle = 0
+            
+        # CALCULATE X, Y COORDINATES FOR ROTATION
+        x1 = 0.5 + 0.5 * math.cos(self._gradient_angle)
+        y1 = 0.5 + 0.5 * math.sin(self._gradient_angle)
+        x2 = 0.5 + 0.5 * math.cos(self._gradient_angle + math.pi)
+        y2 = 0.5 + 0.5 * math.sin(self._gradient_angle + math.pi)
+        
+        # APPLY NEW GRADIENT STYLESHEET
+        gradient = f"qlineargradient(x1:{x1:.2f}, y1:{y1:.2f}, x2:{x2:.2f}, y2:{y2:.2f}, stop:0 #50caca, stop:1 #d385c2)"
+        self.window.set_stylesheet(bg_color=gradient)
 
     def connect_signals(self):
         self.username_edit.returnPressed.connect(self.password_edit.setFocus)
         self.password_edit.returnPressed.connect(self.handle_login)
 
     def handle_login(self):
+        # Prevent double triggering
+        if not self.login_button.isEnabled():
+            return
+
         username = self.username_edit.text().strip()
         password = self.password_edit.text()
         if not username:
@@ -171,12 +222,45 @@ class LoginDialog(QDialog):
         self.login_successful.emit(username)
 
     def show_error(self, message: str):
-        QMessageBox.warning(self, "Login Failed", message)
+        # BEAUTIFIED ERROR DISPLAY: Use a toast-style notification
+        self.show_toast(message, "#e06c75") # OneDark Red
         self.login_button.setEnabled(True)
         self.login_button.setText("Login")
 
     def show_success(self, message: str):
-        pass
+        # BEAUTIFIED SUCCESS DISPLAY: Use a toast-style notification
+        self.show_toast(message, "#98c379") # OneDark Green
+
+    def show_toast(self, message: str, color: str):
+        # Clear previous toast
+        if self._current_toast:
+            try:
+                self._current_toast.hide()
+                self._current_toast.deleteLater()
+            except:
+                pass
+
+        toast = QLabel(message, self)
+        self._current_toast = toast
+        toast.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        toast.setStyleSheet(f"""
+            background-color: {color};
+            color: white;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 13px;
+        """)
+        toast.adjustSize()
+        
+        # Position at the top of the dialog, below the title bar
+        x = (self.width() - toast.width()) // 2
+        y = 50 # Below title bar (height 42)
+        toast.move(x, y)
+        toast.show()
+        
+        # Simple timer to delete toast after 3 seconds
+        QTimer.singleShot(3000, toast.deleteLater)
 
     def get_credentials(self) -> tuple[str, str]:
         return self.username_edit.text().strip(), self.password_edit.text()
@@ -200,19 +284,10 @@ class LoginDialog(QDialog):
             self._event_loop.exec()
         return self._dialog_result if self._dialog_result is not None else False
 
-    def resizeEvent(self, e):
-        super().resizeEvent(e)
-        new_width = self.width() - 300
-        new_height = self.height()
-        background_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "PIC", "person6.jpg").replace(os.sep, '/')
-        if os.path.exists(background_path) and new_width > 0 and new_height > 0:
-            background_pixmap = QPixmap(background_path)
-            scaled_pixmap = background_pixmap.scaled(new_width, new_height, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
-            self.label.setPixmap(scaled_pixmap)
-            self.label.setFixedSize(new_width, new_height)
-
     def closeEvent(self, event):
         self.clear_form()
+        if self._event_loop:
+            self._event_loop.quit()
         super().closeEvent(event)
 
 

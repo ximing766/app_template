@@ -22,14 +22,14 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(APP_VERSION)
-    
+
     db_manager = DatabaseManager()
     user_manager = UserManager()
     
     # Initialize and show login dialog
-    # login_controller = LoginController(user_manager)
-    # if not login_controller.show_login_dialog():
-    #     sys.exit(0)
+    login_controller = LoginController(user_manager)
+    if not login_controller.show_login_dialog():
+        sys.exit(0)
     
     logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.ico")
     main_window = MainWindow(
@@ -37,12 +37,12 @@ def main():
         logo_path=logo_path,
         user_manager=user_manager
     )
-    
+
     main_window.page_manager.register_page(
         "serial", "Serial", SerialDashboardPage,
         icon="icon_restore.svg", tooltip="Serial", order=10
     )
-    
+
     sys.exit(app.exec())
 
 if __name__ == '__main__':
