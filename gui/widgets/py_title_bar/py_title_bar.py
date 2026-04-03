@@ -189,7 +189,7 @@ class PyTitleBar(QWidget):
                     btn_id = _btn_id,
                     tooltip_text = _btn_tooltip,
                     dark_one = self._dark_one,
-                    bg_color = self._bg_color,
+                    bg_color = self._btn_bg_color,
                     bg_color_hover = self._btn_bg_color_hover,
                     bg_color_pressed = self._btn_bg_color_pressed,
                     icon_color = self._icon_color,
@@ -236,10 +236,23 @@ class PyTitleBar(QWidget):
     # SET TITLE BAR TEXT
     # ///////////////////////////////////////////////////////////////
     def set_title(self, title):
-        # Enhance the title by adding some HTML formatting to make it look modern
+        # Center align with artistic HTML/CSS styling
+        words = title.split()
+        first_word = words[0] if words else ""
+        rest_words = " ".join(words[1:]) if len(words) > 1 else ""
+        
         enhanced_title = f"""
-            <span style='font-size: 15px; font-weight: 700; color: {self._context_color};'>{title.split()[0]}</span>
-            <span style='font-size: 14px; font-weight: 500; color: {self._text_foreground}; opacity: 0.95;'>{' '.join(title.split()[1:]) if len(title.split()) > 1 else ''}</span>
+            <div>
+                <span style='font-family: "Segoe UI", "Arial Black", sans-serif; font-size: 16px; font-weight: 900; 
+                      color: {self._context_color}; letter-spacing: 2px; text-transform: uppercase; 
+                      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);'>
+                    {first_word}
+                </span>
+                <span style='font-family: "Segoe UI Light", "Arial", sans-serif; font-size: 14px; font-weight: 300; 
+                      color: {self._text_foreground}; opacity: 0.9; margin-left: 5px; letter-spacing: 1px;'>
+                    {rest_words}
+                </span>
+            </div>
         """
         self.title_label.setText(enhanced_title)
 

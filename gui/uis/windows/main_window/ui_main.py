@@ -156,7 +156,7 @@ class UI_MainWindow(object):
             logo_image = "logo_top_100x22.svg",
             bg_color = self.themes["app_color"]["bg_two"],
             div_color = self.themes["app_color"]["bg_three"],
-            btn_bg_color = self.themes["app_color"]["bg_two"],
+            btn_bg_color = "transparent",
             btn_bg_color_hover = self.themes["app_color"]["bg_three"],
             btn_bg_color_pressed = self.themes["app_color"]["bg_one"],
             icon_color = self.themes["app_color"]["icon_color"],

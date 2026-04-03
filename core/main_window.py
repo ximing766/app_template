@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
         self.settings_page = SettingsPage(self.config_manager, self)
         self.settings_page.background_changed.connect(self.on_background_changed)
 
-        layout = self.ui.right_column.menu_1.layout()
+        layout = self.ui.right_column.menu_1.layout()  # BM add settings page
         if layout is not None:
             while layout.count():
                 item = layout.takeAt(0)
@@ -211,7 +211,7 @@ class MainWindow(QMainWindow):
         self.ui.title_bar._dark_one = self.themes["app_color"]["dark_one"]
         self.ui.title_bar._bg_color = self.themes["app_color"]["bg_two"]
         self.ui.title_bar._div_color = self.themes["app_color"]["dark_four"]
-        self.ui.title_bar._btn_bg_color = self.themes["app_color"]["bg_two"]
+        self.ui.title_bar._btn_bg_color = "transparent"
         self.ui.title_bar._btn_bg_color_hover = self.themes["app_color"]["bg_three"]
         self.ui.title_bar._btn_bg_color_pressed = self.themes["app_color"]["dark_one"]
         self.ui.title_bar._icon_color = self.themes["app_color"]["icon_color"]

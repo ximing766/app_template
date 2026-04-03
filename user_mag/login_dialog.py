@@ -74,8 +74,9 @@ class LoginDialog(QDialog):
             title_size = 10,
             is_custom_title_bar = True
         )
-        self.title_bar.set_title("Login")
+        # self.title_bar.set_title("Login")
         self.title_bar.setFixedHeight(42)
+        self.title_bar.maximize_restore_button.hide() # Hide maximize button
         self.window.layout.addWidget(self.title_bar)
 
         # LOGIN CONTENT WIDGET

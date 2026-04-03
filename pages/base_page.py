@@ -2,9 +2,143 @@
 
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
 
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QSplitter, QLabel
-from PySide6.QtGui import QFont, QColor
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QEvent
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QSplitter, QLabel, QPushButton
+from PySide6.QtGui import QFont, QColor, QIcon, QPainter, QPixmap
+
+class SimpleIconButton(QPushButton):
+    """
+    A lightweight, theme-aware button that renders SVG icons.
+    Designed specifically for page content, avoiding dependency on the OneDark framework.
+    """
+    def __init__(self, icon_path: str, size: int = 30, tooltip: str = "", parent=None):
+        super().__init__(parent)
+        self.setFixedSize(QSize(size, size))
+        self.setCursor(Qt.PointingHandCursor)
+        if tooltip:
+            self.setToolTip(tooltip)
+            
+        self._icon_path = icon_path
+        self._icon_size = size - 10 # Leave some padding
+        
+        # Default colors (will be updated by apply_theme)
+        self._bg_color   = "transparent"
+        self._bg_hover   = "rgba(255, 255, 255, 0.15)"
+        self._bg_pressed = "rgba(255, 255, 255, 0.25)"
+        self._icon_color = "#FFFFFF"
+        self._current_bg = self._bg_color
+        
+    def apply_theme(self, is_light: bool):
+        """Update colors based on the current theme"""
+        if is_light:
+            self._icon_color = "#FFFFFF"
+            self._bg_hover   = "rgba(255, 255, 255, 0.15)"
+            self._bg_pressed = "rgba(255, 255, 255, 0.25)"
+        else:
+            self._icon_color = "#FFFFFF"
+            self._bg_hover   = "rgba(255, 255, 255, 0.15)"
+            self._bg_pressed = "rgba(255, 255, 255, 0.25)"
+        self.update()
+        
+    def enterEvent(self, event):
+        self._current_bg = self._bg_hover
+        self.update()
+        super().enterEvent(event)
+        
+    def leaveEvent(self, event):
+        self._current_bg = self._bg_color
+        self.update()
+        super().leaveEvent(event)
+        
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._current_bg = self._bg_pressed
+            self.update()
+        super().mousePressEvent(event)
+        
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._current_bg = self._bg_hover if self.underMouse() else self._bg_color
+            self.update()
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Draw background
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(self._current_bg))
+        painter.drawRoundedRect(self.rect(), 4, 4)
+        
+        # Draw SVG Icon
+        if self._icon_path:
+            pixmap = QPixmap(self._icon_path)
+            if not pixmap.isNull():
+                # Colorize the SVG
+                icon_painter = QPainter(pixmap)
+                icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                icon_painter.fillRect(pixmap.rect(), QColor(self._icon_color))
+                icon_painter.end()
+                
+                # Scale and center
+                scaled_pixmap = pixmap.scaled(
+                    self._icon_size, self._icon_size, 
+                    Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                x = (self.width() - scaled_pixmap.width()) // 2
+                y = (self.height() - scaled_pixmap.height()) // 2
+                painter.drawPixmap(x, y, scaled_pixmap)
+
+class SimpleIconCheckBox(SimpleIconButton):
+    """
+    A lightweight, theme-aware checkbox that renders SVG icons.
+    Acts like a toggle button.
+    """
+    toggled_signal = Signal(bool)
+
+    def __init__(self, icon_path: str, size: int = 30, tooltip: str = "", parent=None):
+        super().__init__(icon_path, size, tooltip, parent)
+        self.setCheckable(True)
+        self._is_checked = False
+        self.clicked.connect(self._handle_click)
+
+    def _handle_click(self):
+        self._is_checked = not self._is_checked
+        self.setChecked(self._is_checked)
+        self.toggled_signal.emit(self._is_checked)
+        self._update_style()
+
+    def set_checked(self, checked: bool):
+        self._is_checked = checked
+        self.setChecked(checked)
+        self._update_style()
+
+    def apply_theme(self, is_light: bool):
+        super().apply_theme(is_light)
+        self._is_light = is_light
+        self._update_style()
+
+    def _update_style(self):
+        # Update colors based on check state
+        if self._is_checked:
+            self._icon_color = "#568af2" # Accent color when checked
+            self._bg_color = "rgba(86, 138, 242, 0.15)"
+        else:
+            # Revert to base theme colors
+            if hasattr(self, '_is_light') and self._is_light:
+                self._icon_color = "#FFFFFF"
+            else:
+                self._icon_color = "#FFFFFF"
+            self._bg_color = "transparent"
+        
+        self._current_bg = self._bg_color
+        self.update()
+
+    def leaveEvent(self, event):
+        self._current_bg = self._bg_color
+        self.update()
+        super(SimpleIconButton, self).leaveEvent(event) # Skip SimpleIconButton's leaveEvent
 
 class BasePage(QWidget):
     page_activated = Signal(str)  # Emitted when page becomes active
@@ -59,6 +193,14 @@ class BasePage(QWidget):
         
         # Apply global font
         self.apply_global_font()
+        
+        # Apply theme to all SimpleIconButtons
+        for btn in self.findChildren(SimpleIconButton):
+            btn.apply_theme(current_theme.lower() == "light")
+        
+        # Apply theme to all SimpleIconCheckBoxes
+        for chk in self.findChildren(SimpleIconCheckBox):
+            chk.apply_theme(current_theme.lower() == "light")
     
     def apply_global_font(self):
         """Apply global font to this page and all its children"""
@@ -114,6 +256,13 @@ class BasePage(QWidget):
         btn_border_css = f"border: 1px solid {colors['border_btn']};" if is_light else "border: none;"
         
         base_qss = f"""
+        QToolTip {{
+            background-color: {colors['bg_input']};
+            color: {colors['text']};
+            border: 1px solid {colors['border_input']};
+            border-radius: 4px;
+            padding: 5px;
+        }}
         QLabel {{ color: {colors['text']}; }}
         QComboBox, QLineEdit, QCheckBox {{ color: {colors['text']}; }}
         QLineEdit, QTextEdit {{ 
@@ -138,7 +287,7 @@ class BasePage(QWidget):
             background-color: {colors['bg_checkbox_checked']};
             border-color: {colors['border_checkbox']};
         }}
-        QCheckBox::indicator:hover {{ border-color: {colors['border_checkbox_hover']}; }}
+
 
         QPushButton {{ 
             background-color: {colors['bg_btn']}; 

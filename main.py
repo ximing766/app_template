@@ -27,9 +27,9 @@ def main():
     user_manager = UserManager()
     
     # Initialize and show login dialog
-    login_controller = LoginController(user_manager)
-    if not login_controller.show_login_dialog():
-        sys.exit(0)
+    # login_controller = LoginController(user_manager)
+    # if not login_controller.show_login_dialog():
+    #     sys.exit(0)
     
     logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.ico")
     main_window = MainWindow(

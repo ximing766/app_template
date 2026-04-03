@@ -47,6 +47,7 @@ class PyLeftMenuButton(QPushButton):
         context_color = "#568af2",
         text_foreground = "#8a95aa",
         text_active = "#dce1ec",
+        bg_color = "transparent",
         icon_path = "icon_add_user.svg",
         icon_active_menu = "active_menu.svg",
         is_active = False,
@@ -76,7 +77,8 @@ class PyLeftMenuButton(QPushButton):
         self._icon_color_pressed = icon_color_pressed
         self._icon_color_active = icon_color_active
         self._set_icon_color = self._icon_color # Set icon color
-        self._set_bg_color = self._dark_one # Set BG color
+        self._set_bg_color = bg_color if bg_color is not None else self._dark_one # Set BG color
+        self._bg_color = self._set_bg_color # Store default bg color
         self._set_text_foreground = text_foreground
         self._set_text_active = text_active
         self._parent = app_parent
@@ -195,7 +197,7 @@ class PyLeftMenuButton(QPushButton):
         self._is_active = is_active
         if not is_active:
             self._set_icon_color = self._icon_color
-            self._set_bg_color = self._dark_one
+            self._set_bg_color = self._bg_color
 
         self.repaint()
 
@@ -205,7 +207,7 @@ class PyLeftMenuButton(QPushButton):
         self._is_active_tab = is_active
         if not is_active:
             self._set_icon_color = self._icon_color
-            self._set_bg_color = self._dark_one
+            self._set_bg_color = self._bg_color
             
         self.repaint()
 
@@ -240,9 +242,13 @@ class PyLeftMenuButton(QPushButton):
         self._icon_path = icon_path
         self.repaint()
 
-    def update_colors(self, icon_color, icon_color_hover, icon_color_pressed, 
+    def update_colors(self, dark_one, dark_three, dark_four, bg_one, icon_color, icon_color_hover, icon_color_pressed, 
                       icon_color_active, context_color, text_foreground, text_active):
         """Update the button colors"""
+        self._dark_one = dark_one
+        self._dark_three = dark_three
+        self._dark_four = dark_four
+        self._bg_one = bg_one
         self._icon_color = icon_color
         self._icon_color_hover = icon_color_hover
         self._icon_color_pressed = icon_color_pressed
@@ -254,9 +260,14 @@ class PyLeftMenuButton(QPushButton):
         # Update current state
         self._set_icon_color = icon_color
         
+        # If the background was set to follow dark_one, update it
+        if self._bg_color != "transparent":
+            self._bg_color = dark_one
+            self._set_bg_color = dark_one
+        
         # Update tooltip if exists
         if hasattr(self, 'tooltip'):
-            self.tooltip.update_colors(self._dark_one, context_color, text_foreground)
+            self.tooltip.update_colors(dark_one, context_color, text_foreground)
         
         self.update()
 
@@ -289,24 +300,20 @@ class PyLeftMenuButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def change_style(self, event):
         if event == QEvent.Enter:
-            if not self._is_active:
-                self._set_icon_color = self._icon_color_hover
-                self._set_bg_color = self._dark_three
-            self.repaint()          
+            self._set_bg_color = self._dark_three
+            self._set_icon_color = self._icon_color_hover
+            self.repaint()         
         elif event == QEvent.Leave:
-            if not self._is_active:
-                self._set_icon_color = self._icon_color
-                self._set_bg_color = self._dark_one
+            self._set_bg_color = self._bg_color
+            self._set_icon_color = self._icon_color
             self.repaint()
-        elif event == QEvent.MouseButtonPress:
-            if not self._is_active:         
-                self._set_icon_color = self._context_color
-                self._set_bg_color = self._dark_four
-            self.repaint()  
+        elif event == QEvent.MouseButtonPress:            
+            self._set_bg_color = self._dark_four
+            self._set_icon_color = self._icon_color_pressed
+            self.repaint()
         elif event == QEvent.MouseButtonRelease:
-            if not self._is_active:
-                self._set_icon_color = self._icon_color_hover
-                self._set_bg_color = self._dark_three
+            self._set_bg_color = self._dark_three
+            self._set_icon_color = self._icon_color_hover
             self.repaint()
     
     # MOUSE OVER

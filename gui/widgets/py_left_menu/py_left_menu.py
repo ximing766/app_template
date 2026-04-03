@@ -107,6 +107,7 @@ class PyLeftMenu(QWidget):
             context_color = self._context_color,
             text_foreground = self._text_foreground,
             text_active = self._text_active,
+            bg_color = "transparent", # Transparent background
             icon_path = icon_path
         )
         self.toggle_button.clicked.connect(self.toggle_animation)
@@ -123,10 +124,9 @@ class PyLeftMenu(QWidget):
         self.div_bottom.hide()
         self.bottom_layout.addWidget(self.div_bottom)
 
-    def update_colors(self, dark_one, dark_three, dark_four, bg_one, icon_color, 
-                      icon_color_hover, icon_color_pressed, icon_color_active, 
-                      context_color, text_foreground, text_active):
-        """Update the colors for the left menu and its buttons"""
+    def update_colors(self, dark_one, dark_three, dark_four, bg_one, icon_color, icon_color_hover, icon_color_pressed, 
+                      icon_color_active, context_color, text_foreground, text_active):
+        """Update the menu colors"""
         self._dark_one = dark_one
         self._dark_three = dark_three
         self._dark_four = dark_four
@@ -139,26 +139,19 @@ class PyLeftMenu(QWidget):
         self._text_foreground = text_foreground
         self._text_active = text_active
         
-        # Update background
+        # Update bg style
         self.bg.setStyleSheet(f"background: {dark_one}; border-radius: {self._radius};")
         
         # Update toggle button
-        if hasattr(self, 'toggle_button'):
-            self.toggle_button.set_color(dark_one, dark_three, dark_four, bg_one)
-            self.toggle_button.update_colors(icon_color, icon_color_hover, icon_color_pressed, 
-                                              icon_color_active, context_color, text_foreground, text_active)
-        
-        # Update div colors
-        if hasattr(self, 'div_top'):
-            self.div_top.set_color(dark_four)
-        if hasattr(self, 'div_bottom'):
-            self.div_bottom.set_color(dark_four)
+        self.toggle_button.update_colors(dark_one, dark_three, dark_four, bg_one, icon_color, 
+                                        icon_color_hover, icon_color_pressed, icon_color_active, 
+                                        context_color, text_foreground, text_active)
         
         # Update all menu buttons
         for btn in self.findChildren(PyLeftMenuButton):
-            btn.set_color(dark_one, dark_three, dark_four, bg_one)
-            btn.update_colors(icon_color, icon_color_hover, icon_color_pressed, 
-                              icon_color_active, context_color, text_foreground, text_active)
+            btn.update_colors(dark_one, dark_three, dark_four, bg_one, icon_color, 
+                             icon_color_hover, icon_color_pressed, icon_color_active, 
+                             context_color, text_foreground, text_active)
         
         self.update()
 
@@ -191,6 +184,7 @@ class PyLeftMenu(QWidget):
                     context_color = self._context_color,
                     text_foreground = self._text_foreground,
                     text_active = self._text_active,
+                    bg_color = "transparent", # Transparent background
                     icon_path = _btn_icon,
                     is_active = _is_active
                 )

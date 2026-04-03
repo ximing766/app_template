@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QHBoxLayout,
                                QLineEdit, QTextEdit, QCheckBox, QFrame, QMessageBox)
 from PySide6.QtCore import Qt, QTimer, QIODevice, Signal, QDateTime, QUrl
 from PySide6.QtGui import QFont, QRegularExpressionValidator, QDesktopServices, QIcon
-from pages.base_page import BasePage
+from pages.base_page import BasePage, SimpleIconButton, SimpleIconCheckBox
 from core.simple_logger import SimpleLogger
 import time
 import os
@@ -78,7 +78,13 @@ class SerialConfigWidget(QFrame):
         self.btn_open.clicked.connect(self.toggle_serial)
         grid.addWidget(self.btn_open, 0, 2)
 
-        self.btn_clear = QPushButton("CLEAR")
+        self.btn_clear = SimpleIconButton(
+            icon_path=Functions.set_svg_icon("icon_trash.svg"),
+            size=35,
+            # tooltip="Clear Log",
+            parent=self
+        )
+
         self.btn_clear.clicked.connect(self.clear_log)
         grid.addWidget(self.btn_clear, 0, 3)
 
@@ -90,24 +96,44 @@ class SerialConfigWidget(QFrame):
         self.btn_hex_rec.clicked.connect(self.toggle_hex_rec_mode)
         grid.addWidget(self.btn_hex_rec, 0, 5)
 
-        self.chk_timestamp = QCheckBox("TIME")
-        self.chk_timestamp.setChecked(False)
+        self.chk_timestamp = SimpleIconCheckBox(
+            icon_path=Functions.set_svg_icon("icon_timer.svg"),
+            size=35,
+            # tooltip="TIME",
+            parent=self
+        )
+        self.chk_timestamp.set_checked(False)
+
         grid.addWidget(self.chk_timestamp, 0, 6)
 
-        self.chk_autoscroll = QCheckBox("PIN")
-        self.chk_autoscroll.setChecked(True)
+        self.chk_autoscroll = SimpleIconCheckBox(
+            icon_path=Functions.set_svg_icon("icon_pin.svg"),
+            size=35,
+            # tooltip="PIN",
+            parent=self
+        )
+        self.chk_autoscroll.set_checked(False)
+
         grid.addWidget(self.chk_autoscroll, 0, 7)
 
-        self.btn_open_log = QPushButton()
-        self.btn_open_log.setIcon(QIcon(Functions.set_svg_icon("icon_file.svg")))
+        self.btn_open_log = SimpleIconButton(
+            icon_path=Functions.set_svg_icon("icon_file.svg"),
+            size=35,
+            # tooltip="Open Log",
+            parent=self
+        )
         self.btn_open_log.setMinimumHeight(30)
         self.btn_open_log.setMaximumWidth(40)
         self.btn_open_log.clicked.connect(self.open_current_log)
         self.btn_open_log.setEnabled(False)
         grid.addWidget(self.btn_open_log, 0, 8)
 
-        self.btn_open_folder = QPushButton()
-        self.btn_open_folder.setIcon(QIcon(Functions.set_svg_icon("icon_folder_open.svg")))
+        self.btn_open_folder = SimpleIconButton(
+            icon_path=Functions.set_svg_icon("icon_folder.svg"),
+            size=35,
+            # tooltip="Open Log Folder",
+            parent=self
+        )
         self.btn_open_folder.setMinimumHeight(30)
         self.btn_open_folder.setMaximumWidth(40)
         self.btn_open_folder.clicked.connect(self.open_log_folder)
@@ -118,7 +144,12 @@ class SerialConfigWidget(QFrame):
         self.send_edit.setMinimumHeight(30)
         self.send_edit.setPlaceholderText("Send command...")
 
-        self.btn_send = QPushButton("Send")
+        self.btn_send = SimpleIconButton(
+            icon_path=Functions.set_svg_icon("icon_send.svg"),
+            size=35,
+            # tooltip="Send",
+            parent=self
+        )
         self.btn_send.setMinimumHeight(30)
         self.btn_send.clicked.connect(self.send_data)
 
@@ -260,7 +291,7 @@ class SerialConfigWidget(QFrame):
         self.log_area.append(text)
         if self.log_file_path:
             self.logger.log(text + "\n")
-        if self.chk_autoscroll.isChecked():
+        if not self.chk_autoscroll.isChecked():
             vsb = self.log_area.verticalScrollBar()
             vsb.setValue(vsb.maximum())
 
@@ -284,12 +315,27 @@ class SerialDashboardPage(BasePage):
         super().__init__("serial", parent)
 
     def init_content(self):
+        # LOAD THEMES
+        from gui.core.json_themes import Themes
+        self.themes = Themes().items
+
         root = QVBoxLayout()
         root.setContentsMargins(12, 12, 12, 12)
         root.setSpacing(12)
         toolbar = QHBoxLayout()
-        btn_add = QPushButton("+")
-        btn_del = QPushButton("-")
+        
+        btn_add = SimpleIconButton(
+            icon_path=Functions.set_svg_icon("icon_add_circle.svg"),
+            size=35,
+            # tooltip="Add Serial Card",
+            parent=self
+        )
+        btn_del = SimpleIconButton(
+            icon_path=Functions.set_svg_icon("icon_remove_circle.svg"),
+            size=35,
+            # tooltip="Remove Serial Card",
+            parent=self
+        )
         btn_add.clicked.connect(self.add_card)
         btn_del.clicked.connect(self.remove_card)
         toolbar.addWidget(btn_add)
