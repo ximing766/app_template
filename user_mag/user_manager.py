@@ -140,9 +140,9 @@ class UserManager(QObject):
 
         return success
 
-    def get_all_users(self) -> List[Dict[str, Any]]:
-        """Get all users"""
-        return self.user_db.get_all_users()
+    def get_all_users(self, include_inactive: bool = True) -> List[Dict[str, Any]]:
+        """Get all users (includes inactive by default for admin view)"""
+        return self.user_db.get_all_users(include_inactive=include_inactive)
 
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get user by ID"""

@@ -1,15 +1,14 @@
 import sys
 import os
-from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import Qt, QPointF
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.main_window import MainWindow
-from user_mag import UserManager, LoginController
+from user_mag import UserManager, LoginController, UserManagementPage
 from database.database_manager import DatabaseManager
-from pages.serial_dashboard_page import SerialDashboardPage
-from core.simple_logger import SimpleLogger
+from pages.home_page import HomePage
 from core.constants import APP_NAME, APP_VERSION
 
 import warnings
@@ -27,9 +26,9 @@ def main():
     user_manager = UserManager()
     
     # Initialize and show login dialog
-    # login_controller = LoginController(user_manager)
-    # if not login_controller.show_login_dialog():
-    #     sys.exit(0)
+    login_controller = LoginController(user_manager)
+    if not login_controller.show_login_dialog():
+        sys.exit(0)
     
     logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.ico")
     main_window = MainWindow(
@@ -39,8 +38,14 @@ def main():
     )
 
     main_window.page_manager.register_page(
-        "serial", "Serial", SerialDashboardPage,
-        icon="icon_restore.svg", tooltip="Serial", order=10
+        "home", "Home", HomePage,
+        icon="icon_home.svg", tooltip="Home", order=10
+    )
+
+    main_window.page_manager.register_page(
+        "user_management", "Users", UserManagementPage,
+        icon="icon_add_user.svg", tooltip="User Management", order=90,
+        required_role="admin"
     )
 
     sys.exit(app.exec())

@@ -160,22 +160,11 @@ class BasePage(QWidget):
     def _get_current_theme(self):
         """Get current theme from config manager"""
         try:
-            # Try to get config manager from parent window
             window = self.window()
             if hasattr(window, 'config_manager'):
                 return window.config_manager.get_theme()
         except:
             pass
-        
-        # Fall back to PyDracula settings
-        try:
-            from gui.core.json_settings import Settings
-            settings = Settings()
-            if "bright" in settings.items.get("theme_name", ""):
-                return "light"
-        except:
-            pass
-        
         return "dark"
     
     def init_ui(self):
@@ -379,37 +368,65 @@ class BasePage(QWidget):
             splitter.setStyleSheet(base_qss)
 
     def apply_table_styling(self, table_widget):
-        dark_qss = """
-        QTableWidget {
-            background: transparent;
-            gridline-color: rgba(71, 85, 105, 0.5);
-            border: 1px solid #3f444e;
-            border-radius: 5px;
-            color: #f8f8f2;
-        }
-        
-        QTableWidget::item {
-            background-color: rgba(30, 41, 59, 0.55);
-            padding: 5px;
-        }
-        
-        QTableWidget::item:selected {
-            background: rgba(86, 138, 242, 0.3);
-            color: #ffffff;
-        }
-        
-        QHeaderView::section {
-            background: rgba(35, 44, 71, 0.9);
-            color: rgb(221, 230, 241);
-            font-weight: bold;
-            font-size: 14px;
-            padding: 5px;
-            border: none;
-            border-bottom: 1px solid #3f444e;
-            border-right: 1px solid #3f444e;
-        }
-        """
-        table_widget.setStyleSheet(dark_qss)
+        """Apply table styling based on current theme."""
+        is_light = self._get_current_theme().lower() == "light"
+        if is_light:
+            qss = """
+            QTableWidget {
+                background: transparent;
+                gridline-color: rgba(195, 204, 223, 0.6);
+                border: 1px solid #c3ccdf;
+                border-radius: 5px;
+                color: #2c3e50;
+            }
+            QTableWidget::item {
+                background-color: rgba(255, 255, 255, 0.55);
+                padding: 5px;
+            }
+            QTableWidget::item:selected {
+                background: rgba(86, 138, 242, 0.15);
+                color: #2c3e50;
+            }
+            QHeaderView::section {
+                background: rgba(226, 233, 247, 0.9);
+                color: #2c3e50;
+                font-weight: bold;
+                font-size: 14px;
+                padding: 5px;
+                border: none;
+                border-bottom: 1px solid #c3ccdf;
+                border-right: 1px solid #c3ccdf;
+            }
+            """
+        else:
+            qss = """
+            QTableWidget {
+                background: transparent;
+                gridline-color: rgba(71, 85, 105, 0.5);
+                border: 1px solid #3f444e;
+                border-radius: 5px;
+                color: #f8f8f2;
+            }
+            QTableWidget::item {
+                background-color: rgba(30, 41, 59, 0.55);
+                padding: 5px;
+            }
+            QTableWidget::item:selected {
+                background: rgba(86, 138, 242, 0.3);
+                color: #ffffff;
+            }
+            QHeaderView::section {
+                background: rgba(35, 44, 71, 0.9);
+                color: rgb(221, 230, 241);
+                font-weight: bold;
+                font-size: 14px;
+                padding: 5px;
+                border: none;
+                border-bottom: 1px solid #3f444e;
+                border-right: 1px solid #3f444e;
+            }
+            """
+        table_widget.setStyleSheet(qss)
     
     def get_page_id(self) -> str:
         """Get page identifier"""

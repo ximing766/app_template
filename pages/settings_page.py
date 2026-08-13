@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+import sys
 import os
-import json
-import urllib.request
-from PySide6.QtCore import Qt, Signal, QUrl, QThread
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QScrollArea, QFrame, QMessageBox, QPushButton, QComboBox
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, Signal, QProcess
+from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel,
+                               QScrollArea, QFrame, QPushButton, QComboBox, QApplication)
 from .base_page import BasePage
-from core.pyupdate import UpdateManager
-from core.constants import APP_VERSION, GITHUB_REPO
+from core.constants import APP_VERSION
 
 
 class PushSettingCard(QFrame):
@@ -25,21 +23,6 @@ class PushSettingCard(QFrame):
 
     def setContent(self, text):
         self.button.setText(text)
-
-
-class HyperlinkCard(QFrame):
-    def __init__(self, url, button_text, title="", description="", parent=None):
-        super().__init__(parent)
-        self.url = url
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 5, 0, 5)
-        self.button = QPushButton(button_text)
-        self.button.setMinimumHeight(40)
-        self.button.clicked.connect(self.open_url)
-        self.main_layout.addWidget(self.button)
-
-    def open_url(self):
-        QDesktopServices.openUrl(QUrl(self.url))
 
 
 class ComboSettingCard(QFrame):
@@ -99,14 +82,6 @@ class SettingsPage(BasePage):
         if self.config_manager:
             current_theme_name = self.config_manager.get_theme()
             current_theme_display = "Light" if current_theme_name == "light" else "Dark"
-        else:
-            try:
-                from gui.core.json_settings import Settings
-                settings = Settings()
-                if "bright" in settings.items.get("theme_name", ""):
-                    current_theme_display = "Light"
-            except:
-                pass
 
         self.theme_card = PushSettingCard(current_theme_display)
         self.theme_card.clicked.connect(self.on_theme_clicked)
@@ -160,11 +135,9 @@ class SettingsPage(BasePage):
 
         self.help_card = PushSettingCard("About")
         self.help_card.clicked.connect(self.show_about_dialog)
-        self.feedback_card = PushSettingCard("Provide Feedback")
-        self.feedback_card.clicked.connect(self.show_feedback_dialog)
 
-        self.update_card = PushSettingCard("Check for Updates")  # BM update
-        self.update_card.clicked.connect(self.check_update)
+        self.restart_card = PushSettingCard("Restart App")
+        self.restart_card.clicked.connect(self.restart_application)
 
         content_layout.addWidget(self.theme_card)
         content_layout.addWidget(self.background_card)
@@ -174,8 +147,7 @@ class SettingsPage(BasePage):
 
         content_layout.addSpacing(20)
         content_layout.addWidget(self.help_card)
-        content_layout.addWidget(self.feedback_card)
-        content_layout.addWidget(self.update_card)
+        content_layout.addWidget(self.restart_card)
 
         content_layout.addStretch()
 
@@ -185,17 +157,11 @@ class SettingsPage(BasePage):
 
     def on_theme_clicked(self):
         current_text = self.theme_card.button.text()
-        themes_map = {"Light": "bright_theme", "Dark": "default"}
         next_display = "Dark" if current_text == "Light" else "Light"
-        next_theme_file = themes_map[next_display]
         self.theme_card.button.setText(next_display)
         if self.config_manager:
             self.config_manager.set_theme(next_display.lower())
         try:
-            from gui.core.json_settings import Settings
-            settings = Settings()
-            settings.items["theme_name"] = next_theme_file
-            settings.serialize()
             if self.window() and hasattr(self.window(), "theme_changed"):
                 self.window().theme_changed()
         except Exception as e:
@@ -235,56 +201,10 @@ class SettingsPage(BasePage):
             if self.window() and hasattr(self.window(), "apply_global_font"):
                 self.window().apply_global_font()
 
-    def check_update(self):
-        self.update_card.button.setText("Checking...")
-        self.update_card.button.setEnabled(False)
-        self.update_manager = UpdateManager(GITHUB_REPO, APP_VERSION)
-        self.update_manager.set_mode("check")
-        self.update_manager.update_finished.connect(self._on_check_finished)
-        self.update_manager.start()
-
-    def _on_check_finished(self, success, message):
-        self.update_card.button.setEnabled(True)
-        self.update_card.button.setText("Check for Updates")
-        if not success:
-            self.show_error("Update Check Failed", f"Could not check for updates:\n{message}")
-            return
-        result = self.update_manager.update_data
-        if result.get('has_update'):
-            msg = f"A new version ({result.get('latest_version')}) is available!\n\nRelease Notes:\n{result.get('release_notes')}\n\nWould you like to download and install it?"
-            if self.show_confirmation_dialog("Update Available", msg):
-                self.start_download()
-        else:
-            self.show_success("Up to Date", f"You are using the latest version (v{result.get('latest_version')}).")
-
-    def start_download(self):
-        self.update_card.button.setText("Downloading... 0%")
-        self.update_card.button.setEnabled(False)
-        self.update_manager.set_mode("download")
-        try:
-            self.update_manager.update_finished.disconnect()
-        except:
-            pass
-        self.update_manager.update_finished.connect(self._on_download_finished)
-        self.update_manager.progress_changed.connect(self._on_download_progress)
-        self.update_manager.status_changed.connect(lambda s: self.update_card.button.setText(s))
-        self.update_manager.start()
-
-    def _on_download_progress(self, progress):
-        self.update_card.button.setText(f"Downloading... {progress}%")
-
-    def _on_download_finished(self, success, extracted_path):
-        self.update_card.button.setEnabled(True)
-        self.update_card.button.setText("Check for Updates")
-        if not success:
-            self.show_error("Download Failed", f"Could not download update:\n{extracted_path}")
-            return
-        if self.show_confirmation_dialog("Download Complete", "Update downloaded successfully. Restart the application to apply the update now?"):
-            self.update_manager.set_mode("apply", update_data=extracted_path)
-            self.update_manager.start()
-
-    def show_feedback_dialog(self):
-        self.show_info("Feedback", "Thank you for your interest in providing feedback!\n\nPlease visit our GitHub repository.")
+    def restart_application(self):
+        """Restart the application by launching a new process and exiting."""
+        QProcess.startDetached(sys.executable, sys.argv)
+        QApplication.quit()
 
     def show_about_dialog(self):
         self.show_confirmation_dialog("About", f"Application Template\nVersion {APP_VERSION}\nAuthor: @Qilang²\nCopyright © 2024 | MIT License")

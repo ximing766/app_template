@@ -9,12 +9,13 @@
 
 from .base_page import BasePage
 from .settings_page import SettingsPage
+from .home_page import HomePage
 from .page_manager import PageManager, PageInfo
 
 __all__ = [
     'BasePage',
     'SettingsPage',
-    'ExamplePage',
+    'HomePage',
     'PageManager',
     'PageInfo'
 ]

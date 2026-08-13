@@ -1,15 +1,17 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
+# Pure PySide6 login dialog — no OneDark/PyDracula dependency.
+
 import sys
 import os
 import math
-from PySide6.QtCore import Qt, QSize, QRect, Signal, QTimer, QEventLoop, QPoint
-from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter, QPainterPath, QCursor
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QWidget, QSpacerItem, QSizePolicy, QDialog, QLineEdit, QCheckBox, QPushButton, QMessageBox, QFrame
-
-# IMPORT ONEDARK COMPONENTS
-from gui.widgets.py_window.py_window import PyWindow
-from gui.widgets.py_title_bar.py_title_bar import PyTitleBar
+from PySide6.QtCore import Qt, QSize, Signal, QTimer, QEventLoop, QPoint
+from PySide6.QtGui import QPixmap, QColor, QPainter, QPainterPath, QIcon
+from PySide6.QtWidgets import (
+    QApplication, QHBoxLayout, QVBoxLayout, QLabel, QWidget,
+    QSpacerItem, QSizePolicy, QDialog, QLineEdit, QCheckBox,
+    QPushButton, QFrame
+)
 
 
 class LoginDialog(QDialog):
@@ -23,191 +25,216 @@ class LoginDialog(QDialog):
         self._dialog_result = None
         self._current_toast = None
         self._gradient_angle = 0
-        self.dragPos = QPoint()
-        self.setupUI()
-        self.setupWindow()
-        
-        # DYNAMIC GRADIENT TIMER
-        self.gradient_timer = QTimer(self)
-        self.gradient_timer.timeout.connect(self.update_gradient)
-        self.gradient_timer.start(50) # Update every 50ms
+        self._drag_pos = QPoint()
+        self._setup_ui()
+        self._setup_window()
 
-    def setupUI(self):
-        # MAIN LAYOUT
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.setSpacing(0)
-        
-        # UI COMPATIBILITY FOR PyTitleBar
-        self.ui = self
-        self.central_widget_layout = self.main_layout
+        # Dynamic gradient timer
+        self._gradient_timer = QTimer(self)
+        self._gradient_timer.timeout.connect(self._update_gradient)
+        self._gradient_timer.start(50)
 
-        # ADD PY WINDOW
-        self.window = PyWindow(
-            self,
-            layout = Qt.Vertical,
-            bg_color = "#1c1f25",
-            border_radius = 10,
-            border_size = 2,
-            border_color = "#343b48",
-            enable_shadow = True
-        )
-        self.main_layout.addWidget(self.window)
+    def _setup_ui(self):
+        self.setObjectName("LoginDialog")
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        # ADD TITLE BAR
-        self.title_bar = PyTitleBar(
-            self,
-            self,
-            logo_width = 100,
-            bg_color = "transparent",
-            div_color = "transparent",
-            btn_bg_color = "transparent",
-            btn_bg_color_hover = "rgba(255, 255, 255, 0.1)",
-            btn_bg_color_pressed = "rgba(255, 255, 255, 0.05)",
-            icon_color = "#f8f8f2",
-            icon_color_hover = "#ffffff",
-            icon_color_pressed = "#edf0f5",
-            context_color = "#6c99f4",
-            text_foreground = "#f8f8f2",
-            radius = 8,
-            font_family = "Segoe UI",
-            title_size = 10,
-            is_custom_title_bar = True
-        )
-        # self.title_bar.set_title("Login")
-        self.title_bar.setFixedHeight(42)
-        self.title_bar.maximize_restore_button.hide() # Hide maximize button
-        self.window.layout.addWidget(self.title_bar)
+        # Container with border radius
+        self._container = QFrame()
+        self._container.setObjectName("login_container")
+        main_layout.addWidget(self._container)
 
-        # LOGIN CONTENT WIDGET
-        self.login_content = QWidget()
-        self.login_content.setStyleSheet("background-color: transparent; color: #f8f8f2;")
-        self.window.layout.addWidget(self.login_content)
+        container_layout = QVBoxLayout(self._container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
 
-        self.verticalLayout_2 = QVBoxLayout(self.login_content)
-        self.verticalLayout_2.setContentsMargins(40, 20, 40, 40)
-        self.verticalLayout_2.setSpacing(15)
+        # Custom title bar
+        title_bar = QWidget()
+        title_bar.setFixedHeight(42)
+        title_bar.setStyleSheet("background: transparent;")
+        tb_layout = QHBoxLayout(title_bar)
+        tb_layout.setContentsMargins(10, 0, 5, 0)
+        tb_layout.addStretch()
 
-        # LOGO
-        self.label_2 = QLabel()
-        self.label_2.setMinimumSize(QSize(100, 100))
-        self.label_2.setMaximumSize(QSize(100, 100))
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(32, 32)
+        close_btn.setCursor(Qt.PointingHandCursor)
+        close_btn.setStyleSheet("""
+            QPushButton { background: transparent; color: #f8f8f2; border: none; font-size: 16px; border-radius: 4px; }
+            QPushButton:hover { background: rgba(255,255,255,0.15); }
+        """)
+        close_btn.clicked.connect(self.close)
+        tb_layout.addWidget(close_btn)
+        container_layout.addWidget(title_bar)
+
+        # Login content
+        content = QWidget()
+        content.setStyleSheet("background-color: transparent; color: #f8f8f2;")
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(50, 10, 50, 50)
+        content_layout.setSpacing(12)
+
+        # Logo
+        self._logo_label = QLabel()
+        self._logo_label.setFixedSize(80, 80)
         logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.png")
         if os.path.exists(logo_path):
-            logo_pixmap = QPixmap(logo_path)
-            size = min(logo_pixmap.width(), logo_pixmap.height())
-            mask = QPixmap(size, size)
-            mask.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(mask)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            painter.setBrush(Qt.GlobalColor.black)
-            painter.drawEllipse(0, 0, size, size)
-            painter.end()
-            rounded_pixmap = QPixmap(size, size)
-            rounded_pixmap.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(rounded_pixmap)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            pixmap = QPixmap(logo_path)
+            size = min(pixmap.width(), pixmap.height())
+            rounded = QPixmap(size, size)
+            rounded.fill(Qt.transparent)
+            painter = QPainter(rounded)
+            painter.setRenderHint(QPainter.Antialiasing)
             path = QPainterPath()
             path.addEllipse(0, 0, size, size)
             painter.setClipPath(path)
-            painter.drawPixmap(0, 0, size, size, logo_pixmap)
+            painter.drawPixmap(0, 0, size, size, pixmap)
             painter.end()
-            self.label_2.setPixmap(rounded_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        self.label_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.label_2.setScaledContents(True)
-        self.verticalLayout_2.addWidget(self.label_2, 0, Qt.AlignmentFlag.AlignHCenter)
+            self._logo_label.setPixmap(
+                rounded.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+        self._logo_label.setAlignment(Qt.AlignCenter)
+        self._logo_label.setScaledContents(True)
+        content_layout.addWidget(self._logo_label, 0, Qt.AlignHCenter)
 
-        # SPACER
-        self.verticalLayout_2.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
+        # Title
+        title_label = QLabel("欢迎登录")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #ffffff; background: transparent;")
+        content_layout.addWidget(title_label)
 
-        # USERNAME
+        content_layout.addSpacerItem(QSpacerItem(20, 15, QSizePolicy.Minimum, QSizePolicy.Fixed))
+
+        input_style = """
+            QLineEdit {
+                background-color: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                padding: 0 14px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 1.5px solid rgba(255, 255, 255, 0.6);
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+            QLineEdit::placeholder {
+                color: rgba(255, 255, 255, 0.5);
+            }
+        """
+
+        # Username
         self.username_edit = QLineEdit()
         self.username_edit.setClearButtonEnabled(True)
-        self.username_edit.setFixedHeight(40)
+        self.username_edit.setFixedHeight(44)
         self.username_edit.setText("admin")
-        self.username_edit.setStyleSheet("background-color: #b3bdc9; border: 1px solid #6177a5; border-radius: 5px; padding: 0 10px; color: #181817;")
-        self.verticalLayout_2.addWidget(self.username_edit)
+        self.username_edit.setPlaceholderText(" 用户名")
+        self.username_edit.setStyleSheet(input_style)
+        content_layout.addWidget(self.username_edit)
 
-        # PASSWORD
+        # Password
         self.password_edit = QLineEdit()
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setClearButtonEnabled(True)
-        self.password_edit.setFixedHeight(40)
-        self.password_edit.setStyleSheet("background-color: #b3bdc9; border: 1px solid #6177a5; border-radius: 5px; padding: 0 10px; color: #181817;")
-        self.verticalLayout_2.addWidget(self.password_edit)
+        self.password_edit.setFixedHeight(44)
+        self.password_edit.setPlaceholderText(" 密码")
+        self.password_edit.setStyleSheet(input_style)
+        content_layout.addWidget(self.password_edit)
 
-        # REMEMBER ME
-        self.remember_checkbox = QCheckBox()
+        # Remember me
+        self.remember_checkbox = QCheckBox("记住用户名")
         self.remember_checkbox.setChecked(True)
-        self.remember_checkbox.setStyleSheet(" background-color: transparent; color: #131301;")
-        self.verticalLayout_2.addWidget(self.remember_checkbox)
+        self.remember_checkbox.setStyleSheet("""
+            QCheckBox { background-color: transparent; color: rgba(255,255,255,0.8); font-size: 12px; }
+            QCheckBox::indicator { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.4); }
+            QCheckBox::indicator:checked { background-color: #568af2; border-color: #568af2; }
+        """)
+        content_layout.addWidget(self.remember_checkbox)
 
-        # LOGIN BUTTON
-        self.login_button = QPushButton()
-        self.login_button.clicked.connect(self.handle_login)
-        self.login_button.setFixedHeight(40)
-        self.login_button.setStyleSheet("background-color: #568af2; color: white; border-radius: 5px; font-weight: bold;")
+        content_layout.addSpacerItem(QSpacerItem(20, 8, QSizePolicy.Minimum, QSizePolicy.Fixed))
+
+        # Login button
+        self.login_button = QPushButton("登  录")
+        self.login_button.setFixedHeight(44)
+        self.login_button.setCursor(Qt.PointingHandCursor)
+        self.login_button.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.2);
+                color: white;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.15);
+            }
+        """)
         self.login_button.setAutoDefault(False)
         self.login_button.setDefault(False)
-        self.verticalLayout_2.addWidget(self.login_button)
+        self.login_button.clicked.connect(self.handle_login)
+        content_layout.addWidget(self.login_button)
 
-        # FORGOT PASSWORD
-        self.pushButton_2 = QPushButton()
-        self.pushButton_2.setStyleSheet("background-color: transparent; color: #568af2; text-decoration: underline; border: none;")
-        self.verticalLayout_2.addWidget(self.pushButton_2)
+        # Forgot password link
+        forgot_btn = QPushButton("忘记密码？")
+        forgot_btn.setCursor(Qt.PointingHandCursor)
+        forgot_btn.setStyleSheet(
+            "background-color: transparent; color: rgba(255,255,255,0.6); border: none; font-size: 11px;"
+        )
+        content_layout.addWidget(forgot_btn, 0, Qt.AlignHCenter)
 
-        self.retranslateUi()
-        self.connect_signals()
+        container_layout.addWidget(content)
+
+        # Connect signals
+        self.username_edit.returnPressed.connect(self.password_edit.setFocus)
+        self.password_edit.returnPressed.connect(self.handle_login)
         self.password_edit.setFocus()
 
-    def retranslateUi(self):
-        self.username_edit.setPlaceholderText("Username:")
-        self.password_edit.setPlaceholderText("Password:")
-        self.remember_checkbox.setText("Remember me")
-        self.login_button.setText("LOGIN")
-        self.pushButton_2.setText("Forgot password?")
-
-    def setupWindow(self):
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+    def _setup_window(self):
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.resize(400, 500)
-        self.setMinimumSize(400, 500)
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        
+        self.resize(380, 480)
+        self.setMinimumSize(380, 480)
+        self.setMaximumSize(380, 480)
+        self.setWindowModality(Qt.ApplicationModal)
         # Center on screen
-        desktop = QApplication.primaryScreen().availableGeometry()
-        w, h = desktop.width(), desktop.height()
-        self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
+        screen = QApplication.primaryScreen().availableGeometry()
+        self.move(screen.width() // 2 - 190, screen.height() // 2 - 240)
 
-    def mousePressEvent(self, event):
-        # Store current mouse position
-        self.dragPos = event.globalPos()
-
-    def update_gradient(self):  # BM 渐变动态背景
-        # UPDATE GRADIENT ANGLE
+    def _update_gradient(self):
         self._gradient_angle += 0.05
         if self._gradient_angle > 2 * math.pi:
             self._gradient_angle = 0
-            
-        # CALCULATE X, Y COORDINATES FOR ROTATION
         x1 = 0.5 + 0.5 * math.cos(self._gradient_angle)
         y1 = 0.5 + 0.5 * math.sin(self._gradient_angle)
         x2 = 0.5 + 0.5 * math.cos(self._gradient_angle + math.pi)
         y2 = 0.5 + 0.5 * math.sin(self._gradient_angle + math.pi)
-        
-        # APPLY NEW GRADIENT STYLESHEET
         gradient = f"qlineargradient(x1:{x1:.2f}, y1:{y1:.2f}, x2:{x2:.2f}, y2:{y2:.2f}, stop:0 #50caca, stop:1 #d385c2)"
-        self.window.set_stylesheet(bg_color=gradient)
+        self._container.setStyleSheet(f"""
+            #login_container {{
+                background: {gradient};
+                border-radius: 10px;
+                border: 2px solid rgba(255,255,255,0.1);
+            }}
+        """)
 
-    def connect_signals(self):
-        self.username_edit.returnPressed.connect(self.password_edit.setFocus)
-        self.password_edit.returnPressed.connect(self.handle_login)
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() & Qt.LeftButton:
+            diff = event.globalPosition().toPoint() - self._drag_pos
+            self.move(self.pos() + diff)
+            self._drag_pos = event.globalPosition().toPoint()
 
     def handle_login(self):
-        # Prevent double triggering
         if not self.login_button.isEnabled():
             return
-
         username = self.username_edit.text().strip()
         password = self.password_edit.text()
         if not username:
@@ -223,47 +250,34 @@ class LoginDialog(QDialog):
         self.login_successful.emit(username)
 
     def show_error(self, message: str):
-        # BEAUTIFIED ERROR DISPLAY: Use a toast-style notification
-        self.show_toast(message, "#e06c75") # OneDark Red
+        self._show_toast(message, "#e06c75")
         self.login_button.setEnabled(True)
-        self.login_button.setText("Login")
+        self.login_button.setText("LOGIN")
 
     def show_success(self, message: str):
-        # BEAUTIFIED SUCCESS DISPLAY: Use a toast-style notification
-        self.show_toast(message, "#98c379") # OneDark Green
+        self._show_toast(message, "#98c379")
 
-    def show_toast(self, message: str, color: str):
-        # Clear previous toast
+    def _show_toast(self, message: str, color: str):
         if self._current_toast:
             try:
                 self._current_toast.hide()
                 self._current_toast.deleteLater()
             except:
                 pass
-
         toast = QLabel(message, self)
         self._current_toast = toast
-        toast.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        toast.setAlignment(Qt.AlignCenter)
         toast.setStyleSheet(f"""
-            background-color: {color};
-            color: white;
-            border-radius: 5px;
-            padding: 8px 15px;
-            font-weight: bold;
-            font-size: 13px;
+            background-color: {color}; color: white; border-radius: 5px;
+            padding: 8px 15px; font-weight: bold; font-size: 13px;
         """)
         toast.adjustSize()
-        
-        # Position at the top of the dialog, below the title bar
         x = (self.width() - toast.width()) // 2
-        y = 50 # Below title bar (height 42)
-        toast.move(x, y)
+        toast.move(x, 50)
         toast.show()
-        
-        # Simple timer to delete toast after 3 seconds
         QTimer.singleShot(3000, toast.deleteLater)
 
-    def get_credentials(self) -> tuple[str, str]:
+    def get_credentials(self) -> tuple:
         return self.username_edit.text().strip(), self.password_edit.text()
 
     def clear_form(self):
@@ -297,16 +311,13 @@ class LoginController:
         self.user_manager = user_manager
         self.parent = parent
         self.login = None
-        self._authenticated = False
-        self._current_username = None
 
     def show_login_dialog(self) -> bool:
         self.login = LoginDialog(self.parent)
-        self.login.login_successful.connect(self.handle_login_attempt)
-        result = self.login.exec()
-        return result
+        self.login.login_successful.connect(self._handle_attempt)
+        return self.login.exec()
 
-    def handle_login_attempt(self, username: str):
+    def _handle_attempt(self, username: str):
         if not self.login:
             return
         username, password = self.login.get_credentials()

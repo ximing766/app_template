@@ -21,8 +21,8 @@
     },
     "background": {
         "enabled": true,
-        "opacity": 0.36,
-        "current_image": "assets/PIC/L_1.png",
+        "opacity": 0.77,
+        "current_image": "assets/PIC/D_4.jpg",
         "available_images": [
             "assets/PIC/D_4.jpg",
             "assets/PIC/D_6.png",
@@ -30,7 +30,7 @@
             "assets/PIC/L_2.jpg",
             "assets/PIC/L_4.jpg"
         ],
-        "current_index": 2
+        "current_index": 0
     },
     "theme": {
         "current_theme": "dark",
@@ -51,39 +51,6 @@
     },
     "font": {
         "family": "Cascadia Code",
-        "size": 12
-    },
-    "onedark": {
-        "copyright": "By: Qilang²",
-        "year": 2026,
-        "theme_name": "default",
-        "custom_title_bar": true,
-        "startup_size": [
-            1400,
-            720
-        ],
-        "minimum_size": [
-            960,
-            540
-        ],
-        "lef_menu_size": {
-            "minimum": 50,
-            "maximum": 240
-        },
-        "left_menu_content_margins": 3,
-        "left_column_size": {
-            "minimum": 0,
-            "maximum": 240
-        },
-        "right_column_size": {
-            "minimum": 0,
-            "maximum": 240
-        },
-        "time_animation": 500,
-        "font": {
-            "family": "Segoe UI",
-            "title_size": 10,
-            "text_size": 9
-        }
+        "size": 11
     }
 }
