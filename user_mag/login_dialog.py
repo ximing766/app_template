@@ -13,6 +13,10 @@ from PySide6.QtWidgets import (
     QPushButton, QFrame
 )
 
+# Background gradient animation: ~30 fps, one full sweep in ~2.2 s.
+GRADIENT_INTERVAL_MS = 50
+GRADIENT_STEP = 0.09
+
 
 class LoginDialog(QDialog):
     login_successful = Signal(str)
@@ -29,10 +33,11 @@ class LoginDialog(QDialog):
         self._setup_ui()
         self._setup_window()
 
-        # Dynamic gradient timer
+        # Dynamic gradient timer (~30 fps, full colour sweep every ~2.2 s)
         self._gradient_timer = QTimer(self)
+        self._gradient_timer.setTimerType(Qt.PreciseTimer)
         self._gradient_timer.timeout.connect(self._update_gradient)
-        self._gradient_timer.start(50)
+        self._gradient_timer.start(GRADIENT_INTERVAL_MS)
 
     def _setup_ui(self):
         self.setObjectName("LoginDialog")
@@ -99,7 +104,7 @@ class LoginDialog(QDialog):
         content_layout.addWidget(self._logo_label, 0, Qt.AlignHCenter)
 
         # Title
-        title_label = QLabel("欢迎登录")
+        title_label = QLabel("Welcome to Login")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #ffffff; background: transparent;")
         content_layout.addWidget(title_label)
@@ -108,19 +113,21 @@ class LoginDialog(QDialog):
 
         input_style = """
             QLineEdit {
-                background-color: rgba(255, 255, 255, 0.15);
-                border: 1px solid rgba(255, 255, 255, 0.3);
+                background-color: rgba(255, 255, 255, 0.25);
+                border: 2px solid rgba(255, 255, 255, 0.4);
                 border-radius: 8px;
                 padding: 0 14px;
                 color: #ffffff;
                 font-size: 14px;
+                font-weight: 500;
             }
             QLineEdit:focus {
-                border: 1.5px solid rgba(255, 255, 255, 0.6);
-                background-color: rgba(255, 255, 255, 0.2);
+
+                background-color: rgba(255, 255, 255, 0.35);
+                outline: none;
             }
             QLineEdit::placeholder {
-                color: rgba(255, 255, 255, 0.5);
+                color: rgba(255, 255, 255, 0.65);
             }
         """
 
@@ -128,8 +135,8 @@ class LoginDialog(QDialog):
         self.username_edit = QLineEdit()
         self.username_edit.setClearButtonEnabled(True)
         self.username_edit.setFixedHeight(44)
-        self.username_edit.setText("admin")
-        self.username_edit.setPlaceholderText(" 用户名")
+        # self.username_edit.setText("admin")
+        self.username_edit.setPlaceholderText(" Username")
         self.username_edit.setStyleSheet(input_style)
         content_layout.addWidget(self.username_edit)
 
@@ -138,24 +145,15 @@ class LoginDialog(QDialog):
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setClearButtonEnabled(True)
         self.password_edit.setFixedHeight(44)
-        self.password_edit.setPlaceholderText(" 密码")
+        self.password_edit.setPlaceholderText(" Password")
         self.password_edit.setStyleSheet(input_style)
         content_layout.addWidget(self.password_edit)
 
-        # Remember me
-        self.remember_checkbox = QCheckBox("记住用户名")
-        self.remember_checkbox.setChecked(True)
-        self.remember_checkbox.setStyleSheet("""
-            QCheckBox { background-color: transparent; color: rgba(255,255,255,0.8); font-size: 12px; }
-            QCheckBox::indicator { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.4); }
-            QCheckBox::indicator:checked { background-color: #568af2; border-color: #568af2; }
-        """)
-        content_layout.addWidget(self.remember_checkbox)
 
         content_layout.addSpacerItem(QSpacerItem(20, 8, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
         # Login button
-        self.login_button = QPushButton("登  录")
+        self.login_button = QPushButton("LOGIN")
         self.login_button.setFixedHeight(44)
         self.login_button.setCursor(Qt.PointingHandCursor)
         self.login_button.setStyleSheet("""
@@ -168,10 +166,11 @@ class LoginDialog(QDialog):
                 border: 1px solid rgba(255, 255, 255, 0.3);
             }
             QPushButton:hover {
-                background-color: rgba(255, 255, 255, 0.3);
+                background-color: rgba(86, 138, 242, 0.8);
+                border: 1px solid rgba(86, 138, 242, 1);
             }
             QPushButton:pressed {
-                background-color: rgba(255, 255, 255, 0.15);
+                background-color: rgba(86, 138, 242, 0.6);
             }
         """)
         self.login_button.setAutoDefault(False)
@@ -179,20 +178,12 @@ class LoginDialog(QDialog):
         self.login_button.clicked.connect(self.handle_login)
         content_layout.addWidget(self.login_button)
 
-        # Forgot password link
-        forgot_btn = QPushButton("忘记密码？")
-        forgot_btn.setCursor(Qt.PointingHandCursor)
-        forgot_btn.setStyleSheet(
-            "background-color: transparent; color: rgba(255,255,255,0.6); border: none; font-size: 11px;"
-        )
-        content_layout.addWidget(forgot_btn, 0, Qt.AlignHCenter)
-
         container_layout.addWidget(content)
 
         # Connect signals
         self.username_edit.returnPressed.connect(self.password_edit.setFocus)
         self.password_edit.returnPressed.connect(self.handle_login)
-        self.password_edit.setFocus()
+        self.username_edit.setFocus()
 
     def _setup_window(self):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
@@ -206,9 +197,9 @@ class LoginDialog(QDialog):
         self.move(screen.width() // 2 - 190, screen.height() // 2 - 240)
 
     def _update_gradient(self):
-        self._gradient_angle += 0.05
+        self._gradient_angle += GRADIENT_STEP
         if self._gradient_angle > 2 * math.pi:
-            self._gradient_angle = 0
+            self._gradient_angle -= 2 * math.pi
         x1 = 0.5 + 0.5 * math.cos(self._gradient_angle)
         y1 = 0.5 + 0.5 * math.sin(self._gradient_angle)
         x2 = 0.5 + 0.5 * math.cos(self._gradient_angle + math.pi)
@@ -281,8 +272,7 @@ class LoginDialog(QDialog):
         return self.username_edit.text().strip(), self.password_edit.text()
 
     def clear_form(self):
-        if not self.remember_checkbox.isChecked():
-            self.username_edit.clear()
+        self.username_edit.clear()
         self.password_edit.clear()
 
     def accept(self):

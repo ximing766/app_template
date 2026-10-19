@@ -2,8 +2,13 @@
 
 # Copyright (C) 2025  Qilang² <ximing766@gmail.com>
 
-from PySide6.QtCore import Qt, Signal, QTimer, QSize, QEvent
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QSplitter, QLabel, QPushButton
+from PySide6.QtCore import (
+    Qt, Signal, QTimer, QSize, QEvent, QEasingCurve, QPropertyAnimation,
+)
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QSplitter, QLabel,
+    QPushButton, QFrame, QGraphicsOpacityEffect,
+)
 from PySide6.QtGui import QFont, QColor, QIcon, QPainter, QPixmap
 
 class SimpleIconButton(QPushButton):
@@ -479,70 +484,144 @@ class BasePage(QWidget):
         return self.__str__()
 
     # Information display methods
-    def _show_notification(self, title: str, content: str, bg_color: str, text_color: str = "#ffffff",
-                          duration: int = 2000):
-       
+    _TOAST_STYLES = {
+        "info":    {"dark": "#568af2", "light": "#3b82f6", "glyph": "i"},
+        "success": {"dark": "#4CAF50", "light": "#2e7d32", "glyph": "✓"},
+        "warning": {"dark": "#e5c07b", "light": "#b26a00", "glyph": "!"},
+        "error":   {"dark": "#e06c75", "light": "#c62828", "glyph": "✕"},
+    }
+
+    def _show_notification(self, title: str, content: str, kind: str = "info",
+                           duration: int = 2000):
+        """Show a toast; used by show_info/show_success/show_warning/show_error."""
+        if not hasattr(self, "_active_toasts"):
+            self._active_toasts = []
+
+        is_light = self._get_current_theme().lower() == "light"
+        spec = self._TOAST_STYLES.get(kind, self._TOAST_STYLES["info"])
+        accent = spec["dark"] if not is_light else spec["light"]
+        bg = "#ffffff" if is_light else "#252a33"
+        border = "rgba(0, 0, 0, 0.08)" if is_light else "rgba(255, 255, 255, 0.10)"
+        text = "#2c3e50" if is_light else "#e8ecf0"
+        muted = "#6b7280" if is_light else "#9aa3b0"
+
         toast = QWidget(self.window())
-        toast.setObjectName("ToastWidget")
         toast.setWindowFlags(Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
         toast.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        
-        # Use QHBoxLayout for perfect centering
-        layout = QHBoxLayout(toast)
-        layout.setContentsMargins(20, 15, 20, 15)
-        
-        label = QLabel(content)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(label)
-        
-        style = f"""
-            QWidget#ToastWidget {{ 
-                background-color: {bg_color}; 
-                border: 1px solid rgba(0, 0, 0, 0.1); 
-                border-radius: 8px;
-            }}
-            QLabel {{ 
-                color: {text_color}; 
-                font-family: "Segoe UI", "Microsoft YaHei";
-                font-size: 16px;
-                font-weight: 500;
-                background: transparent;
-                border: none;
-            }}
-        """
-        toast.setStyleSheet(style)
-        
-        toast.show()
+        toast.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        outer = QVBoxLayout(toast)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        card = QFrame()
+        card.setObjectName("ToastCard")
+        card.setMinimumWidth(300)
+        card.setMaximumWidth(420)
+        card.setStyleSheet(
+            f"#ToastCard {{ background-color: {bg}; border: 1px solid {border}; "
+            f"border-left: 3px solid {accent}; border-radius: 8px; }}"
+        )
+        outer.addWidget(card)
+
+        row = QHBoxLayout(card)
+        row.setContentsMargins(12, 10, 14, 10)
+        row.setSpacing(10)
+
+        badge = QLabel(spec["glyph"])
+        badge.setFixedSize(20, 20)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        badge.setStyleSheet(
+            f"color: #ffffff; background-color: {accent}; border-radius: 10px; "
+            "font-size: 12px; font-weight: 700;"
+        )
+        row.addWidget(badge, 0, Qt.AlignmentFlag.AlignTop)
+
+        text_layout = QVBoxLayout()
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setSpacing(2)
+
+        if title:
+            title_label = QLabel(title)
+            title_label.setStyleSheet(
+                f"color: {text}; background: transparent; border: none; "
+                "font-size: 12px; font-weight: 600;"
+            )
+            text_layout.addWidget(title_label)
+
+        if content:
+            body = QLabel(content)
+            body.setWordWrap(True)
+            body.setMinimumWidth(230)
+            body.setMaximumWidth(360)
+            body.setStyleSheet(
+                f"color: {muted if title else text}; background: transparent; "
+                "border: none; font-size: 12px;"
+            )
+            text_layout.addWidget(body)
+
+        row.addLayout(text_layout, 1)
         toast.adjustSize()
-        
-        # Position at top-right of the window
-        main_window = self.window()
-        if main_window:
-            rect = main_window.geometry()
-            x = rect.right() - toast.width() - 25
-            y = rect.top() + 50
-            toast.move(x, y)
-        
-        # Use a more reliable closing method
-        def close_and_destroy():
-            if toast:
-                toast.close()
-                toast.deleteLater()
-        
-        QTimer.singleShot(duration, close_and_destroy)
+
+        effect = QGraphicsOpacityEffect(toast)
+        toast.setGraphicsEffect(effect)
+        fade_in = QPropertyAnimation(effect, b"opacity", toast)
+        fade_in.setDuration(140)
+        fade_in.setStartValue(0.0)
+        fade_in.setEndValue(1.0)
+        fade_in.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self._active_toasts.append(toast)
+        toast.show()
+        fade_in.start()
+        self._reposition_toasts()
+
+        def dismiss():
+            if toast not in self._active_toasts:
+                return
+            fade_out = QPropertyAnimation(effect, b"opacity", toast)
+            fade_out.setDuration(160)
+            fade_out.setStartValue(effect.opacity())
+            fade_out.setEndValue(0.0)
+            fade_out.setEasingCurve(QEasingCurve.Type.InCubic)
+            fade_out.finished.connect(lambda: self._destroy_toast(toast))
+            fade_out.start()
+            toast._fade = fade_out
+
+        QTimer.singleShot(duration, dismiss)
         return toast
 
+    def _reposition_toasts(self):
+        """Stack active toasts at the top-right of the window."""
+        if not hasattr(self, "_active_toasts"):
+            return
+        main_window = self.window()
+        if main_window is None:
+            return
+        rect = main_window.geometry()
+        y = rect.top() + 48
+        for toast in self._active_toasts:
+            toast.adjustSize()
+            toast.move(rect.right() - toast.width() - 24, y)
+            y += toast.height() + 8
+
+    def _destroy_toast(self, toast):
+        if toast in getattr(self, "_active_toasts", []):
+            self._active_toasts.remove(toast)
+        toast.hide()
+        toast.deleteLater()
+        self._reposition_toasts()
+
     def show_info(self, title: str = "Info", content: str = "", duration: int = 2000):
-        self._show_notification(title, content, "#E1F0FF", "#005A9E", duration)
-    
+        return self._show_notification(title, content, "info", duration)
+
     def show_success(self, title: str = "Success", content: str = "", duration: int = 2000):
-        self._show_notification(title, content, "#DFF6DD", "#0F5C2E", duration)
-    
+        return self._show_notification(title, content, "success", duration)
+
     def show_warning(self, title: str = "Warning", content: str = "", duration: int = 3000):
-        return self._show_notification(title, content, "#FFF4CE", "#9D5D00", duration)
-    
+        return self._show_notification(title, content, "warning", duration)
+
     def show_error(self, title: str = "Error", content: str = "", duration: int = 4000):
-        self._show_notification(title, content, "#FDE7E9", "#A80000", duration)
+        return self._show_notification(title, content, "error", duration)
         
     def show_confirmation_dialog(self, title: str, content: str, is_warning: bool = False) -> bool:
         box = QMessageBox(self.window())

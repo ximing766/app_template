@@ -37,18 +37,16 @@ class ComboSettingCard(QFrame):
         self.combo.lineEdit().setReadOnly(True)
         self.combo.lineEdit().setAlignment(Qt.AlignCenter)
         self.combo.lineEdit().setStyleSheet("background: transparent; border: none; selection-background-color: transparent;")
-        # Override the base page style to show the drop-down arrow
-        self.combo.setStyleSheet("""
-
-            QComboBox::down-arrow {
-                width: 0;
-                height: 0;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 6px solid currentColor;  /* 仅上边框着色，形成向下箭头 */
-                margin-right: 8px;  /* 微调箭头和右边缘的距离 */
-            }
-        """)
+        # Use the shared chevron asset instead of a CSS triangle hack.
+        arrow_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "assets", "images", "svg_icons", "icon_chevron_down.svg",
+        ).replace("\\", "/")
+        self.combo.setStyleSheet(
+            "QComboBox::drop-down { border: none; width: 20px; }"
+            f"QComboBox::down-arrow {{ image: url('{arrow_path}'); width: 10px; height: 6px; "
+            "margin-right: 6px; }"
+        )
 
         
         if items:

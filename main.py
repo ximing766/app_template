@@ -5,50 +5,81 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import logger first for early initialization
+from Log import logger, setup_logger
+
 from core.main_window import MainWindow
 from user_mag import UserManager, LoginController, UserManagementPage
 from database.database_manager import DatabaseManager
 from pages.home_page import HomePage
+from pages.serial_page import SerialPage
+from serial_comm.serial_manager import SerialManager
 from core.constants import APP_NAME, APP_VERSION
 
 import warnings
 warnings.filterwarnings("ignore")
 
 def main():
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    logger.info("=" * 60)
+    logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
+    logger.info("=" * 60)
 
-    app = QApplication(sys.argv)
-    app.setApplicationName(APP_NAME)
-    app.setApplicationVersion(APP_VERSION)
+    try:
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
-    db_manager = DatabaseManager()
-    user_manager = UserManager()
-    
-    # Initialize and show login dialog
-    login_controller = LoginController(user_manager)
-    if not login_controller.show_login_dialog():
-        sys.exit(0)
-    
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.ico")
-    main_window = MainWindow(
-        app_name=APP_NAME,
-        logo_path=logo_path,
-        user_manager=user_manager
-    )
+        app = QApplication(sys.argv)
+        app.setApplicationName(APP_NAME)
+        app.setApplicationVersion(APP_VERSION)
 
-    main_window.page_manager.register_page(
-        "home", "Home", HomePage,
-        icon="icon_home.svg", tooltip="Home", order=10
-    )
+        # Release serial threads on shutdown (ports stay open throughout the session).
+        app.aboutToQuit.connect(SerialManager.instance().close_all_ports)
 
-    main_window.page_manager.register_page(
-        "user_management", "Users", UserManagementPage,
-        icon="icon_add_user.svg", tooltip="User Management", order=90,
-        required_role="admin"
-    )
+        db_manager = DatabaseManager()
+        logger.debug("Database manager initialized")
 
-    sys.exit(app.exec())
+        user_manager = UserManager()
+        logger.debug("User manager initialized")
+
+        # Initialize and show login dialog
+        login_controller = LoginController(user_manager)
+        if not login_controller.show_login_dialog():
+            logger.info("User cancelled login, exiting application")
+            sys.exit(0)
+
+        logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.ico")
+        main_window = MainWindow(
+            app_name=APP_NAME,
+            logo_path=logo_path,
+            user_manager=user_manager
+        )
+
+        main_window.page_manager.register_page(
+            "home", "Home", HomePage,
+            icon="icon_home.svg", tooltip="Home", order=10
+        )
+
+        main_window.page_manager.register_page(
+            "serial", "Serial", SerialPage,
+            icon="icon_signal.svg", tooltip="Serial Port Management", order=20
+        )
+
+        main_window.page_manager.register_page(
+            "user_management", "Users", UserManagementPage,
+            icon="icon_add_user.svg", tooltip="User Management", order=90,
+            required_role="admin"
+        )
+
+        logger.info("Application started successfully")
+        exit_code = app.exec()
+        logger.info(f"Application exited with code: {exit_code}")
+
+        return exit_code
+
+    except Exception as e:
+        logger.warning(f"Fatal error during application startup: {e}")
+        return 1
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

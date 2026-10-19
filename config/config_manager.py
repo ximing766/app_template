@@ -83,6 +83,15 @@ class ConfigManager:
             "font": {
                 "family": "Courier New",
                 "size": 10
+            },
+            "mes": {
+                "enabled": False,
+                "base_url": "",
+                "upload_path": "/api/v1/test-results",
+                "api_key": "",
+                "timeout": 10,
+                "max_retries": 3,
+                "verify_tls": True
             }
         }
 
@@ -261,6 +270,19 @@ class ConfigManager:
 
         self._save_json_config(self.config_path, self._config)
         return True
+
+    def get_section(self, name: str) -> Dict[str, Any]:
+        """Get a top-level configuration section (empty dict when missing)"""
+        section = self._config.get(name, {})
+        return section.copy() if isinstance(section, dict) else {}
+
+    def set_section(self, name: str, values: Dict[str, Any]):
+        """Merge values into a top-level configuration section and persist"""
+        current = self._config.get(name)
+        if not isinstance(current, dict):
+            current = {}
+        self._config[name] = self._merge_configs(current, values)
+        self._save_json_config(self.config_path, self._config)
 
     def save_config(self):
         """Save all configurations to main config file"""

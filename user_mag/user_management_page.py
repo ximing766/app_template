@@ -19,7 +19,7 @@ class UserDialog(QDialog):
         self.is_edit = is_edit
         self.parent_page = parent if hasattr(parent, 'user_manager') else None
         self.setWindowTitle("编辑用户" if is_edit else "创建用户")
-        self.setFixedSize(420, 380)
+        self.setFixedSize(420, 320)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setup_ui()
         self.apply_dialog_style()
@@ -133,11 +133,6 @@ class UserDialog(QDialog):
         self.password_edit.setFixedHeight(36)
         form_layout.addRow("密码:", self.password_edit)
 
-        self.fullname_edit = QLineEdit()
-        self.fullname_edit.setPlaceholderText("请输入全名")
-        self.fullname_edit.setFixedHeight(36)
-        form_layout.addRow("全名:", self.fullname_edit)
-
         self.email_edit = QLineEdit()
         self.email_edit.setPlaceholderText("请输入邮箱")
         self.email_edit.setFixedHeight(36)
@@ -184,7 +179,6 @@ class UserDialog(QDialog):
         if self.is_edit:
             kwargs = {
                 'email': user_data.get('email', ''),
-                'full_name': user_data.get('full_name', ''),
                 'role': user_data.get('role', 'user'),
             }
             if user_data.get('password'):
@@ -206,7 +200,6 @@ class UserDialog(QDialog):
                 username=user_data['username'],
                 password=user_data['password'],
                 email=user_data.get('email', ''),
-                full_name=user_data.get('full_name', ''),
                 role=user_data.get('role', 'user')
             )
             if success:
@@ -221,7 +214,6 @@ class UserDialog(QDialog):
         if not self.user_data:
             return
         self.username_edit.setText(self.user_data.get('username', ''))
-        self.fullname_edit.setText(self.user_data.get('full_name', ''))
         self.email_edit.setText(self.user_data.get('email', ''))
         role = self.user_data.get('role', 'user')
         role_index = self.role_combo.findText(role)
@@ -237,7 +229,6 @@ class UserDialog(QDialog):
     def get_user_data(self) -> Dict[str, Any]:
         data = {
             'username': self.username_edit.text().strip(),
-            'full_name': self.fullname_edit.text().strip(),
             'email': self.email_edit.text().strip(),
             'role': self.role_combo.currentText()
         }

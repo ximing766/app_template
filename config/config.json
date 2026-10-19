@@ -21,7 +21,7 @@
     },
     "background": {
         "enabled": true,
-        "opacity": 0.77,
+        "opacity": 1.0,
         "current_image": "assets/PIC/D_4.jpg",
         "available_images": [
             "assets/PIC/D_4.jpg",
@@ -51,6 +51,15 @@
     },
     "font": {
         "family": "Cascadia Code",
-        "size": 11
+        "size": 10
+    },
+    "mes": {
+        "enabled": false,
+        "base_url": "",
+        "upload_path": "/api/v1/test-results",
+        "api_key": "",
+        "timeout": 10,
+        "max_retries": 3,
+        "verify_tls": true
     }
 }

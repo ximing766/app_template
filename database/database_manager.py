@@ -8,6 +8,7 @@
 # (at your option) any later version.
 
 import os
+import sys
 from pathlib import Path
 from typing import Optional
 from sqlalchemy import create_engine, Engine
@@ -15,17 +16,10 @@ from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 
 from .models import Base
+from Log import logger
+
 class DatabaseManager:
-    """Base database manager class"""
-    
     def __init__(self, db_path: Optional[str] = None, echo: bool = False):
-        """
-        Initialize database manager
-        
-        Args:
-            db_path: Path to the database file. If None, uses default location
-            echo: Whether to echo SQL statements for debugging
-        """
         self._engine: Optional[Engine] = None
         self._SessionLocal: Optional[sessionmaker] = None
         self._db_path = self._setup_db_path(db_path)
@@ -35,20 +29,27 @@ class DatabaseManager:
         self._initialize_database()
     
     def _setup_db_path(self, db_path: Optional[str]) -> Path:
-        """Setup database path"""
         if db_path:
             return Path(db_path)
+
+        # Use platform-specific user data directory
+        if sys.platform == 'win32':
+            # Windows: C:\Users\{username}\AppData\Local\{AppName}
+            app_data = Path(os.getenv('LOCALAPPDATA', os.path.expanduser('~')))
+            app_name = 'Generic App'  # Match your app name
+            db_dir = app_data / app_name / 'data'
         else:
-            # Default to database directory (same as this module)
-            db_dir = Path(__file__).parent
-            db_dir.mkdir(exist_ok=True)
-            return db_dir / "app.db"
+            # macOS/Linux: ~/.config/{app_name} or ~/.local/share/{app_name}
+            db_dir = Path(os.path.expanduser('~/.local/share/generic_app/data'))
+
+        db_dir.mkdir(parents=True, exist_ok=True)
+        return db_dir / 'app.db'
     
     def _initialize_database(self):
         """Initialize database engine and session factory"""
         # Ensure parent directory exists
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Create engine
         self._engine = create_engine(
             f'sqlite:///{self._db_path}',
@@ -56,10 +57,10 @@ class DatabaseManager:
             pool_pre_ping=True,  # Verify connections before use
             connect_args={"check_same_thread": False}  # Allow multi-threading
         )
-        
+
         # Create all tables
         Base.metadata.create_all(self._engine)
-        
+
         # Create session factory
         self._SessionLocal = sessionmaker(
             bind=self._engine,
@@ -87,14 +88,6 @@ class DatabaseManager:
     
     @contextmanager
     def session_scope(self):
-        """
-        Provide a transactional scope around a series of operations.
-        
-        Usage:
-            with db_manager.session_scope() as session:
-                # Do database operations
-                pass
-        """
         session = self.get_session()
         try:
             yield session

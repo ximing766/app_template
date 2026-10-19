@@ -24,30 +24,24 @@ class UserSession:
         self.user_id: Optional[int] = None
         self.username: Optional[str] = None
         self.role: Optional[str] = None
-        self.full_name: Optional[str] = None
         self.email: Optional[str] = None
         self.is_authenticated: bool = False
-        self.login_time: Optional[datetime] = None
 
     def clear(self):
         """Clear session data"""
         self.user_id = None
         self.username = None
         self.role = None
-        self.full_name = None
         self.email = None
         self.is_authenticated = False
-        self.login_time = None
 
     def set_user(self, user: User):
         """Set session data from User object"""
         self.user_id = user.id
         self.username = user.username
         self.role = user.role
-        self.full_name = user.full_name
         self.email = user.email
         self.is_authenticated = True
-        self.login_time = datetime.now()
 
     def is_admin(self) -> bool:
         """Check if current user is admin"""
@@ -98,9 +92,9 @@ class UserManager(QObject):
             self.user_logged_out.emit()
 
     def create_user(self, username: str, password: str, email: str = "",
-                   full_name: str = "", role: str = "user") -> bool:
+                   role: str = "user") -> bool:
         """Create a new user"""
-        user = self.user_db.create_user(username, password, email, full_name, role)
+        user = self.user_db.create_user(username, password, email, role)
         if user:
             self.user_created.emit(username)
             return True
@@ -173,9 +167,7 @@ class UserManager(QObject):
                 'id': self.current_session.user_id,
                 'username': self.current_session.username,
                 'role': self.current_session.role,
-                'full_name': self.current_session.full_name,
-                'email': self.current_session.email,
-                'login_time': self.current_session.login_time.isoformat() if self.current_session.login_time else None
+                'email': self.current_session.email
             }
         return None
 

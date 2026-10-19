@@ -21,34 +21,33 @@ class UserDatabase:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
     
-    def create_user(self, username: str, password: str, email: str = "", 
-                   full_name: str = "", role: str = "user") -> Optional[User]:
+    def create_user(self, username: str, password: str, email: str = "",
+                   role: str = "user") -> Optional[User]:
         try:
             with self.db_manager.session_scope() as session:
                 # Check if user already exists
                 existing_user = session.query(User).filter_by(username=username).first()
                 if existing_user:
                     return None
-                
+
                 # Hash password
                 password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-                
+
                 # Create user
                 new_user = User(
                     username=username,
                     password_hash=password_hash.decode('utf-8'),
                     email=email,
-                    full_name=full_name,
                     role=role,
                     is_active=True,
                     created_at=datetime.utcnow()
                 )
-                
+
                 session.add(new_user)
                 session.flush()  # Get the ID before commit
-                
+
                 return new_user
-                
+
         except IntegrityError:
             return None
         except Exception as e:
@@ -59,19 +58,17 @@ class UserDatabase:
         try:
             with self.db_manager.session_scope() as session:
                 user = session.query(User).filter_by(
-                    username=username, 
+                    username=username,
                     is_active=True
                 ).first()
-                
+
                 if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
-                    user.last_login = datetime.utcnow()
-                    
                     # Detach the user from session to avoid DetachedInstanceError
                     session.expunge(user)
                     return user
-                
+
                 return None
-                
+
         except Exception as e:
             print(f"Error authenticating user: {e}")
             return None
@@ -98,13 +95,13 @@ class UserDatabase:
                 user = session.query(User).filter_by(id=user_id).first()
                 if not user:
                     return False
-                
+
                 # Update allowed fields
-                allowed_fields = ['email', 'full_name', 'role', 'is_active', 'config_data']
+                allowed_fields = ['email', 'role', 'is_active']
                 for field, value in kwargs.items():
                     if field in allowed_fields:
                         setattr(user, field, value)
-                
+
                 # Handle password update separately
                 if 'password' in kwargs:
                     password_hash = bcrypt.hashpw(kwargs['password'].encode('utf-8'), bcrypt.gensalt())
@@ -181,19 +178,17 @@ class UserDatabase:
                 username='admin',
                 password='admin123',
                 email='admin@localhost',
-                full_name='Administrator',
                 role='admin'
             )
             if admin_user:
                 print("Default admin user created: admin/admin123")
-        
+
         # Create default regular user
         if not self.user_exists('user'):
             regular_user = self.create_user(
                 username='user',
                 password='user123',
                 email='user@localhost',
-                full_name='Regular User',
                 role='user'
             )
             if regular_user:

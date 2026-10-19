@@ -215,3 +215,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+**/__pycache__/**
+**/logs/**
+**/build/**
+**/dist/**
+**/.claude/**
+**/.codegraph/**
