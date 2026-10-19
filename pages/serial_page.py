@@ -352,11 +352,13 @@ class SerialPage(BasePage):
             )
         if hasattr(self, "_console"):
             # QPlainTextEdit is not themed by BasePage (only QTextEdit is).
+            # NOTE: every brace must be doubled inside an f-string, otherwise
+            # Qt rejects the whole stylesheet.
             self._console.setStyleSheet(
                 f"QPlainTextEdit#serial_console {{ background-color: {colors['bg']}; "
                 f"border: 1px solid {colors['border']}; border-radius: 8px; "
                 f"color: {colors['log_text']}; padding: 6px; "
-                "selection-background-color: #568af2; }}"
+                "selection-background-color: #568af2; }"
             )
         card = self.findChild(QFrame, "serial_console_card")
         if card is not None:
@@ -563,11 +565,12 @@ class SerialPage(BasePage):
         try:
             text = data.decode("utf-8")
         except UnicodeDecodeError:
+            # Not decodable as text: bytes are the only faithful view.
             return f"RX {len(data)}B: {self._to_hex(data)}"
 
-        # A frame made only of line breaks / whitespace carries no readable
-        # text, so show its bytes instead of blank log lines.
-        if not any(ch.isprintable() and not ch.isspace() for ch in text):
+        # A frame made only of whitespace / line breaks would render as blank
+        # lines, so show its bytes instead of an apparently empty log entry.
+        if text.strip() == "":
             return f"RX {len(data)}B: {self._to_hex(data)}"
 
         # CRLF becomes one line break; lone CR/LF also break the line. Repeated

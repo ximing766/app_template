@@ -113,17 +113,16 @@ class LoginDialog(QDialog):
 
         input_style = """
             QLineEdit {
-                background-color: rgba(255, 255, 255, 0.25);
-                border: 2px solid rgba(255, 255, 255, 0.4);
+                background-color: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
                 border-radius: 8px;
                 padding: 0 14px;
-                color: #ffffff;
+                color: #492949;
                 font-size: 14px;
                 font-weight: 500;
             }
             QLineEdit:focus {
-
-                background-color: rgba(255, 255, 255, 0.35);
+                background-color: rgba(255, 255, 255, 0.9);
                 outline: none;
             }
             QLineEdit::placeholder {

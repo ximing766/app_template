@@ -622,8 +622,10 @@ class MainWindow(QMainWindow):
     def apply_global_font(self):
         if not self.config_manager:
             return
-        font_family = self.config_manager.get_font_family()
+        font_family = self.config_manager.get_font_family() or "Courier New"
         font_size = self.config_manager.get_font_size()
+        # Defensive: Qt warns (and ignores) point sizes <= 0.
+        font_size = max(6, min(32, int(font_size or 10)))
         font = QFont(font_family, font_size)
         self.setFont(font)
         for page_instance in self.pages.values():

@@ -37,10 +37,8 @@ def main():
         app.aboutToQuit.connect(SerialManager.instance().close_all_ports)
 
         db_manager = DatabaseManager()
-        logger.debug("Database manager initialized")
 
         user_manager = UserManager()
-        logger.debug("User manager initialized")
 
         # Initialize and show login dialog
         login_controller = LoginController(user_manager)

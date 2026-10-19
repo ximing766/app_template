@@ -203,11 +203,17 @@ class BasePage(QWidget):
         try:
             window = self.window()
             if hasattr(window, 'config_manager'):
-                font_family = window.config_manager.get_font_family()
+                font_family = window.config_manager.get_font_family() or font_family
                 font_size = window.config_manager.get_font_size()
-        except:
+        except Exception:
             pass
-        
+
+        # Qt rejects point sizes <= 0 and would warn on every page creation.
+        try:
+            font_size = max(6, min(32, int(font_size or 10)))
+        except (TypeError, ValueError):
+            font_size = 10
+
         font = QFont(font_family, font_size)
         self.setFont(font)
         

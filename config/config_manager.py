@@ -179,8 +179,13 @@ class ConfigManager:
         return True
 
     def get_font_size(self) -> int:
-        """Get current font size"""
-        return self._config.get("font", {}).get("size", 10)
+        """Get current font size (always a usable point size)"""
+        raw = self._config.get("font", {}).get("size", 10)
+        try:
+            size = int(raw)
+        except (TypeError, ValueError):
+            return 10
+        return max(6, min(32, size))
 
     def set_font_size(self, font_size: int):
         """Set font size"""
