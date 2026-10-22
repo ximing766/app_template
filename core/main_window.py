@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QPoint, QSize, QTimer, QEvent, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap, QPainterPath
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QStackedWidget, QPushButton, QLabel, QFrame
+    QStackedWidget, QPushButton, QLabel, QFrame, QApplication
 )
 
 from config.config_manager import ConfigManager
@@ -303,6 +303,15 @@ class MainWindow(QMainWindow):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self._build_ui()
+
+        # Child widgets cover the whole window, so the window's own mouse
+        # handlers never fire. An application-level filter routes edge drags and
+        # mouse side buttons here regardless of which child was hit.
+        self._resize_edges = Qt.Edges()
+        self._hover_edges = Qt.Edges()
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
 
         QTimer.singleShot(100, self._init_ui)
 
@@ -639,6 +648,54 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     RESIZE_MARGIN = 8
+
+    def eventFilter(self, obj, event):
+        etype = event.type()
+        if etype not in (QEvent.MouseButtonPress, QEvent.MouseMove):
+            return super().eventFilter(obj, event)
+        if not isinstance(obj, QWidget) or obj.window() is not self:
+            return super().eventFilter(obj, event)
+
+        if etype == QEvent.MouseMove:
+            if event.buttons() & Qt.LeftButton:
+                return super().eventFilter(obj, event)
+            self._apply_hover_cursor(self._edges_at(obj.mapTo(self, event.position().toPoint())))
+            return super().eventFilter(obj, event)
+
+        button = event.button()
+        if button in (Qt.BackButton, Qt.ForwardButton):
+            self._step_page(-1 if button == Qt.BackButton else 1)
+            return True
+
+        if button == Qt.LeftButton and not self.isMaximized():
+            edges = self._edges_at(obj.mapTo(self, event.position().toPoint()))
+            if edges:
+                handle = self.windowHandle()
+                if handle is not None and handle.startSystemResize(edges):
+                    return True
+        return super().eventFilter(obj, event)
+
+    def _apply_hover_cursor(self, edges):
+        if edges == self._hover_edges:
+            return
+        self._hover_edges = edges
+        if edges:
+            self.setCursor(self._cursor_for_edges(edges))
+        else:
+            self.unsetCursor()
+
+    def _step_page(self, delta: int):
+        """Switch pages with the mouse side buttons (back / forward)."""
+        order = [pid for pid in self.page_manager.get_page_order() if pid in self._nav_buttons]
+        if not order:
+            return
+        current_widget = self._pages_stack.currentWidget()
+        current = next((pid for pid, page in self.pages.items() if page is current_widget), None)
+        if current in order:
+            index = (order.index(current) + delta) % len(order)
+        else:
+            index = 0 if delta > 0 else len(order) - 1
+        self._navigate_to(order[index])
 
     def _edges_at(self, pos):
         """Return the Qt.Edges flags for a point near the window border."""

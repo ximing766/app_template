@@ -20,8 +20,6 @@ FRAME_GAP = 0.012
 # Hard cap on frame assembly so a continuously streaming device still yields
 # data instead of being merged into one ever-growing frame.
 FRAME_MAX = 0.05
-# Idle polling interval.
-POLL_INTERVAL = 0.005
 
 
 class SerialWorker(QThread):
@@ -41,51 +39,55 @@ class SerialWorker(QThread):
         self.running = True
         port = self.serial_port
 
-        while self.running and port is not None and port.is_open:
-            try:
-                waiting = port.in_waiting
-            except Exception as exc:
-                self.connection_lost.emit(str(exc))
-                break
-
-            if not waiting:
-                time.sleep(POLL_INTERVAL)
-                continue
-
-            try:
-                frame = bytearray(port.read(min(waiting, MAX_FRAME_BYTES)))
-            except Exception as exc:
-                # Device unplugged / handle invalidated: abnormal close.
-                self.connection_lost.emit(str(exc))
-                break
-
-            # Gather the rest of a burst so a logical frame is not split across
-            # signals. This never inspects the byte values.
-            frame_started = time.monotonic()
-            deadline = frame_started + FRAME_GAP
-            while (self.running and len(frame) < MAX_FRAME_BYTES
-                   and time.monotonic() < deadline):
+        try:
+            while self.running and port is not None and port.is_open:
+                # Blocking read (up to the port timeout) instead of waking the
+                # CPU 200 times/second while the line is idle.
                 try:
-                    extra_waiting = port.in_waiting
+                    waiting = port.in_waiting
+                    frame = bytearray(port.read(min(waiting, MAX_FRAME_BYTES) or 1))
                 except Exception as exc:
+                    # Device unplugged / handle invalidated: abnormal close.
                     self.connection_lost.emit(str(exc))
-                    self.running = False
                     break
-                if not extra_waiting:
-                    time.sleep(0.002)
+
+                if not frame or not self.running:
                     continue
-                try:
-                    frame.extend(port.read(min(extra_waiting, MAX_FRAME_BYTES - len(frame))))
-                except Exception as exc:
-                    self.connection_lost.emit(str(exc))
-                    self.running = False
-                    break
-                # Bounded assembly: never starve the consumer during a stream.
-                deadline = min(time.monotonic() + FRAME_GAP, frame_started + FRAME_MAX)
 
-            if frame and self.running:
-                # Emit the frame untouched: 0x0A / 0x0D are data, not framing.
-                self.data_received.emit(bytes(frame))
+                # Gather the rest of a burst so a logical frame is not split
+                # across signals. This never inspects the byte values.
+                frame_started = time.monotonic()
+                deadline = frame_started + FRAME_GAP
+                while (self.running and len(frame) < MAX_FRAME_BYTES
+                       and time.monotonic() < deadline):
+                    try:
+                        extra_waiting = port.in_waiting
+                    except Exception as exc:
+                        self.connection_lost.emit(str(exc))
+                        self.running = False
+                        break
+                    if not extra_waiting:
+                        QThread.usleep(2000)
+                        continue
+                    try:
+                        frame.extend(port.read(min(extra_waiting, MAX_FRAME_BYTES - len(frame))))
+                    except Exception as exc:
+                        self.connection_lost.emit(str(exc))
+                        self.running = False
+                        break
+                    # Bounded assembly: never starve the consumer during a stream.
+                    deadline = min(time.monotonic() + FRAME_GAP, frame_started + FRAME_MAX)
+
+                if frame and self.running:
+                    # Emit the frame untouched: 0x0A / 0x0D are data, not framing.
+                    self.data_received.emit(bytes(frame))
+        except Exception as exc:
+            # Windows raises OSError (WinError 8/1450) from wait primitives when
+            # the process runs out of kernel resources. Never let it escape
+            # ``run()``: the thread would die while the UI still shows "open".
+            self.running = False
+            self.connection_lost.emit(f"Serial reader stopped: {exc}")
+            return
 
         # The loop can only fall through while ``running`` is still True if the
         # handle went away underneath us (device removed, port closed by

@@ -20,18 +20,40 @@ from core.constants import APP_NAME, APP_VERSION
 import warnings
 warnings.filterwarnings("ignore")
 
+
+def _set_windows_app_id(app_id: str) -> None:
+    """Give the process its own taskbar identity.
+
+    Without this the taskbar button is grouped with python.exe and shows the
+    interpreter's icon instead of the application's.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(ctypes.c_wchar_p(app_id))
+    except Exception:
+        pass
+
+
 def main():
     logger.info("=" * 60)
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
     logger.info("=" * 60)
 
     try:
+        _set_windows_app_id(APP_NAME)
+
         QApplication.setHighDpiScaleFactorRoundingPolicy(
             Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
         app = QApplication(sys.argv)
         app.setApplicationName(APP_NAME)
         app.setApplicationVersion(APP_VERSION)
+
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.ico")
+        if os.path.exists(icon_path):
+            app.setWindowIcon(QIcon(icon_path))
 
         # Release serial threads on shutdown (ports stay open throughout the session).
         app.aboutToQuit.connect(SerialManager.instance().close_all_ports)

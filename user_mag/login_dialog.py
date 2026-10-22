@@ -62,13 +62,24 @@ class LoginDialog(QDialog):
         tb_layout.setContentsMargins(10, 0, 5, 0)
         tb_layout.addStretch()
 
+        caption_style = """
+            QPushButton { background: transparent; color: #f8f8f2; border: none; font-size: 16px; border-radius: 4px; }
+            QPushButton:hover { background: rgba(255,255,255,0.15); }
+        """
+
+        min_btn = QPushButton("—")
+        min_btn.setFixedSize(32, 32)
+        min_btn.setCursor(Qt.PointingHandCursor)
+        min_btn.setToolTip("Minimize")
+        min_btn.setStyleSheet(caption_style)
+        min_btn.clicked.connect(self.showMinimized)
+        tb_layout.addWidget(min_btn)
+
         close_btn = QPushButton("✕")
         close_btn.setFixedSize(32, 32)
         close_btn.setCursor(Qt.PointingHandCursor)
-        close_btn.setStyleSheet("""
-            QPushButton { background: transparent; color: #f8f8f2; border: none; font-size: 16px; border-radius: 4px; }
-            QPushButton:hover { background: rgba(255,255,255,0.15); }
-        """)
+        close_btn.setToolTip("Close")
+        close_btn.setStyleSheet(caption_style)
         close_btn.clicked.connect(self.close)
         tb_layout.addWidget(close_btn)
         container_layout.addWidget(title_bar)
@@ -187,6 +198,12 @@ class LoginDialog(QDialog):
     def _setup_window(self):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        # Frameless dialogs are still top-level windows, so they need their own icon.
+        icon_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "logo.ico"
+        )
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         self.resize(380, 480)
         self.setMinimumSize(380, 480)
         self.setMaximumSize(380, 480)

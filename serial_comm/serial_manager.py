@@ -73,7 +73,8 @@ class SerialManager(QObject):
 
         if self.find_port_id(config.port):
             return False, port_id, f"{config.port} is already open"
-        
+
+        ser = None
         try:
             ser = serial.Serial(
                 port=config.port,
@@ -101,9 +102,21 @@ class SerialManager(QObject):
             return True, port_id, ""
             
         except serial.SerialException as e:
+            self._safe_close(ser)
             return False, port_id, f"Failed to open {config.port}: {str(e)}"
         except Exception as e:
+            self._safe_close(ser)
             return False, port_id, f"Unexpected error: {str(e)}"
+
+    @staticmethod
+    def _safe_close(ser):
+        """Close a port we failed to register, so its handle is not leaked."""
+        if ser is None:
+            return
+        try:
+            ser.close()
+        except Exception:
+            pass
     
     def close_port(self, port_id: str) -> bool:
         """Close a serial port connection.
@@ -117,26 +130,32 @@ class SerialManager(QObject):
         if port_id not in self._connections:
             return False
         
-        conn = self._connections[port_id]
-        
+        conn = self._connections.pop(port_id)
+        errors = []
+
         try:
             worker = conn['worker']
             if worker.isRunning():
                 worker.stop()
-            
+        except Exception as e:
+            errors.append(f"worker stop failed: {e}")
+
+        # Close the handle even if stopping the reader failed: a leaked COM
+        # handle keeps the port locked until the process exits.
+        try:
             port = conn['port']
             if port.is_open:
                 port.close()
-            
-            conn['config'].is_open = False
-            del self._connections[port_id]
-            
-            self.port_closed.emit(port_id)
-            return True
-            
         except Exception as e:
-            self.error_occurred.emit(port_id, f"Error closing port: {str(e)}")
-            return False
+            errors.append(f"port close failed: {e}")
+
+        conn['config'].is_open = False
+
+        if errors:
+            self.error_occurred.emit(port_id, "Error closing port: " + "; ".join(errors))
+
+        self.port_closed.emit(port_id)
+        return not errors
     
     def close_all_ports(self):
         """Close all open serial port connections."""
@@ -228,8 +247,16 @@ class SerialManager(QObject):
     
     def _on_connection_lost(self, port_id: str, error_msg: str):
         """Internal handler for connection loss."""
-        if port_id in self._connections:
-            self._connections[port_id]['config'].is_open = False
+        conn = self._connections.get(port_id)
+        if conn is not None:
+            conn['config'].is_open = False
+            # Release the OS handle immediately: a lost port must not stay open
+            # (leaked handles here exhaust kernel resources over time).
+            try:
+                if conn['port'].is_open:
+                    conn['port'].close()
+            except Exception:
+                pass
         self.connection_lost.emit(port_id, error_msg)
     
     def _on_error_occurred(self, port_id: str, error_msg: str):
